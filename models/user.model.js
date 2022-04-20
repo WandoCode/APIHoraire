@@ -16,7 +16,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    calendrier: { type: mongoose.ObjectId },
+    calendrier: { type: mongoose.Schema.Types.ObjectId, ref: "Calendar" },
     role: {
       type: String,
       enum: datasUser.role.roles,
