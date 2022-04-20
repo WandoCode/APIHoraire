@@ -1,0 +1,10 @@
+{
+  "models": {
+    "users": {
+      "username": { "minlength": 5, "maxlength": 20 },
+      "password": { "minlength": 8, "maxlength": 20 },
+      "email": { "minlength": 5, "maxlength": 30 },
+      "role": { "roles": ["admin", "moderator", "user"], "default": "user" }
+    }
+  }
+}
