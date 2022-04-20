@@ -11,7 +11,7 @@ const workTimeSchema = new Schema(
   { timestamps: true }
 );
 
-workTimeSchema.virtual("totalHourString", function () {
+workTimeSchema.virtual("totalHourString").get(function () {
   /* Return a string of the total worked time formatted HH:MM */
 
   // Get difference in ms
@@ -20,13 +20,19 @@ workTimeSchema.virtual("totalHourString", function () {
   // ms to hh:mm
   let sec = (deltaDateMs / 1000).toFixed(0); // Round to second
   let minute = (sec / 60).toFixed(0) - this.breakTime; // Get total min
-  let hour = (minute / 60).toFixed(0); // Get total hours
-  let minRemainder = minute % 60; // Get minute remainder
 
-  let hourString = hour < 10 ? `0${hour}` : `${hour}`;
+  let minRemainder = minute % 60; // Get minute remainder
+  let hour = (minute - minRemainder) / 60; // Get total hours
+
+  let hourString = hour < 10 ? `0${Math.abs(hour)}` : `${hour}`;
   let minuteString = minRemainder < 10 ? `0${minRemainder}` : `${minRemainder}`;
 
-  return `${hourString}:${minuteString}`;
+  const timeString =
+    hour > 0
+      ? `${hourString}:${minuteString}`
+      : `-${hourString}:${minuteString}`;
+
+  return timeString;
 });
 
 workTimeSchema.methods.totalTime = function () {
