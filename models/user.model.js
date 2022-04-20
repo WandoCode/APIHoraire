@@ -16,7 +16,12 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    role: { type: String, enum: datasUser.role.roles },
+    calendrier: { type: mongoose.ObjectId },
+    role: {
+      type: String,
+      enum: datasUser.role.roles,
+      default: datasUser.role.default,
+    },
   },
   // Add automaticattly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
