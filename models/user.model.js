@@ -7,16 +7,20 @@ const userSchema = new Schema(
   {
     username: {
       type: String,
-      unique: true,
+      unique: datasUser.username.unique,
       minlength: datasUser.username.minlength,
       maxlength: datasUser.username.maxlength,
-      required: true,
+      required: datasUser.username.required,
     },
     password: {
       type: String,
-      required: true,
+      required: datasUser.password.required,
     },
-    calendrier: { type: mongoose.Schema.Types.ObjectId, ref: "Calendar" },
+    calendrier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Calendar",
+      required: datasUser.calendrier.required,
+    },
     role: {
       type: String,
       enum: datasUser.role.roles,

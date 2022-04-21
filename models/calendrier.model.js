@@ -1,9 +1,11 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const dataCal = require("../config/datas.json").models.calendar;
+
 const calendarSchema = new Schema(
   {
-    date: { type: Date, require: true },
+    date: { type: Date, required: dataCal.date.required },
     schedule: { type: mongoose.Schema.Types.ObjectId, ref: "Schedule" },
     workTime: { type: mongoose.Schema.Types.ObjectId, ref: "WorkTime" },
   },

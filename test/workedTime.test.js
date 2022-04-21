@@ -6,7 +6,7 @@ const app = require("../server");
 const { setupDB } = require("./test-setup");
 
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
-setupDB("WorkedTime", workTimeSeed, false);
+setupDB("WorkTime", workTimeSeed, false);
 
 /*     workTime model's method and virtual     */
 /*=============================================*/

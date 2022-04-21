@@ -1,11 +1,17 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const datasWT = require("../config/datas.json").models.workTime;
+
 const workTimeSchema = new Schema(
   {
-    startDate: { type: Date, require: true },
-    endDate: { type: Date, require: true },
-    breakTime: { type: Number, min: 0, default: 0 },
+    startDate: { type: Date, required: datasWT.startDate.required },
+    endDate: { type: Date, required: datasWT.endDate.required },
+    breakTime: {
+      type: Number,
+      min: datasWT.breakTime.min,
+      default: datasWT.breakTime.default,
+    },
   },
   // Add automaticattly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
