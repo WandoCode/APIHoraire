@@ -32,28 +32,30 @@ async function dropAllCollections() {
 }
 
 // Seed the db with datas
-async function seedDatabase(runSaveMiddleware = false, modelName, seed) {
+async function seedDatabase(runSaveMiddleware = false, seed) {
   // runSaveMiddleware: pour les user, on doit hash le mdp, on l'a écrit dans le 'save' middleware, il faut donc le lancer. Cela ne se fait que via create, pas avec insertMany.
-  const model = mongoose.models[modelName];
+  for (const modelName in seed) {
+    const model = mongoose.models[modelName];
 
-  if (!model) throw new Error(`Cannot find Model '${modelName}'`);
+    if (!model) throw new Error(`Cannot find Model '${modelName}'`);
 
-  runSaveMiddleware ? await model.create(seed) : await model.insertMany(seed);
+    runSaveMiddleware
+      ? await model.create(seed[modelName])
+      : await model.insertMany(seed[modelName]);
+  }
 }
 
 module.exports = {
-  setupDB(databaseName, seed, runSaveMiddleware = false) {
+  setupDB(seed, runSaveMiddleware = false) {
     // Connect with Mongoose (this can replace the mongodb-memory-server method)
     beforeAll(async () => {
-      await mongoose.connect(
-        process.env.TEST_DB_LINK.replace("<DBNAME>", databaseName)
-      );
+      await mongoose.connect(process.env.TEST_DB_LINK);
     });
 
     // Seed Db with datas if needed
     if (seed) {
       beforeEach(async () => {
-        await seedDatabase(runSaveMiddleware, databaseName, seed);
+        await seedDatabase(runSaveMiddleware, seed);
       });
     }
 

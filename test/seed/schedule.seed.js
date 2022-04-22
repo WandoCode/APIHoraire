@@ -24,21 +24,23 @@ let workTimeD = new WorkTime({
   breakTime: 30,
 });
 
-module.exports = [
-  {
-    name: "shedule A",
-    workTime: workTimeA.id,
-  },
-  {
-    name: "shedule B",
-    workTime: workTimeB.id,
-  },
-  {
-    name: "shedule C",
-    workTime: workTimeC.id,
-  },
-  {
-    name: "shedule D",
-    workTime: workTimeD.id,
-  },
-];
+module.exports = {
+  Schedule: [
+    {
+      name: "shedule A",
+      workTime: workTimeA.id,
+    },
+    {
+      name: "shedule B",
+      workTime: workTimeB.id,
+    },
+    {
+      name: "shedule C",
+      workTime: workTimeC.id,
+    },
+    {
+      name: "shedule D",
+      workTime: workTimeD.id,
+    },
+  ],
+};

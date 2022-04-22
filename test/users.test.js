@@ -2,13 +2,16 @@ const supertest = require("supertest");
 const app = require("../server");
 
 const User = require("../models/user.model");
+const WorkTime = require("../models/workTime.model");
+const Schedule = require("../models/schedule.model");
+
 const { setupDB } = require("./test-setup");
 const userSeed = require("./seed/user.seed");
 const { genStringWithLength } = require("../heplers/function");
 const datasUser = require("../config/datas.json").models.users;
 
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
-setupDB("User", userSeed, true);
+setupDB(userSeed, true);
 
 /*     USER GET     */
 /*==================*/
@@ -16,7 +19,7 @@ test("GET /users/all get all users", async () => {
   try {
     let reponse = await supertest(app).get("/users/all").expect(200);
     expect(Array.isArray(reponse.body.datas)).toBeTruthy();
-    expect(reponse.body.datas.length).toBe(userSeed.length);
+    expect(reponse.body.datas.length).toBe(userSeed.User.length);
   } catch (err) {
     throw err;
   }
@@ -37,6 +40,7 @@ test("GET /users/all get all users when db is empty", async () => {
 
 test("GET /users/get/:id get a user with the given id", async () => {
   try {
+    // Test a user creation
     let newUser = await User.create({
       username: "user test",
       password: "un mdp",
@@ -54,6 +58,7 @@ test("GET /users/get/:id get a user with the given id", async () => {
     expect(reponse.body.datas.username).toBe(newUser.username);
     expect(reponse.body.datas._id).toBe(newUser.id);
     expect(reponse.body.datas.password).toBe(newUser.password);
+    expect(reponse.body.datas.role).toBe("user");
   } catch (err) {
     throw err;
   }
@@ -64,7 +69,7 @@ test("GET /users/get/:id where no result is found", async () => {
     let reponse = await supertest(app)
       // The id have the correct format
       .get(`/users/get/625b1bf85ce58741b994c683`)
-      .expect(204);
+      .expect(400);
 
     // The results is not the one expected
     expect(reponse.body.success).toBeFalsy();
@@ -138,7 +143,7 @@ test("POST /users/add post new user in db", async () => {
   try {
     let userTest = {
       username: "Test1",
-      password: "Lorem ipsum",
+      password: "1234 56789",
     };
 
     let reponse = await supertest(app)
@@ -227,7 +232,7 @@ test("PUT /users/update/:id Update a user with wrong id", async () => {
         username: majUsername,
         password: "12345678",
       })
-      .expect(204);
+      .expect(400);
 
     // API has not made the change expected
     expect(reponse.body.success).toBeFalsy();
@@ -302,7 +307,7 @@ test("DELETE /users/delete/:id Delete a user without being the user", async () =
     // Take a user from db
     let user = await User.findOne();
     // Try to delete a user
-    let reponse = await supertest(app)
+    await supertest(app)
       .delete(`/users/delete/${user.id}`)
       .send({ username: "patate", password: "la grosse patate" })
       .expect(401);
@@ -311,6 +316,100 @@ test("DELETE /users/delete/:id Delete a user without being the user", async () =
     let delUser = await User.findById(user._id);
     expect(delUser.username).toBe(user.username);
     expect(delUser.password).toBe(user.password);
+  } catch (err) {
+    throw err;
+  }
+});
+
+/*     USER POST CALENDAR     */
+/*============================*/
+test("POST and PUT a schedule in user calendar", async () => {
+  try {
+    let workTimeA = new WorkTime({
+      startDate: new Date(2022, 3, 20, 7, 0),
+      endDate: new Date(2022, 3, 20, 12, 45),
+      breakTime: 0,
+    });
+    let scheduleA = new Schedule({
+      name: "test schedule",
+      workTime: workTimeA.id,
+    });
+
+    let user = await User.findOne();
+
+    const rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add`)
+      .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
+      .expect(200);
+
+    expect(rep.body.success).toBeTruthy();
+
+    // Check if the schedule has been saved correctely in db
+    let userFound = await User.findById(user.id);
+    expect(userFound.id).toBeDefined();
+    expect(userFound.calendrier["2022"]["5"]["22"].schedule).toBeDefined();
+    expect(userFound.calendrier["2022"]["5"]["22"].schedule).toBe(scheduleA.id);
+
+    //Change the schedule at the same date
+    let scheduleB = new Schedule({
+      name: "test scheduleB",
+      workTime: workTimeA.id,
+    });
+    const repB = await supertest(app)
+      .post(`/users/${user.id}/calendar/add`)
+      .send({ scheduleId: scheduleB.id, date: "2022-06-22" })
+      .expect(200);
+
+    expect(repB.body.success).toBeTruthy();
+
+    // Check if the schedule has been changed correctely in db
+    let userFoundB = await User.findById(user.id);
+    expect(userFoundB.id).toBeDefined();
+    expect(userFoundB.calendrier["2022"]["5"]["22"].schedule).toBeDefined();
+    expect(userFoundB.calendrier["2022"]["5"]["22"].schedule).toBe(
+      scheduleB.id
+    );
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("POST a schedule in user calendar with wrong datas", async () => {
+  try {
+    let workTimeA = new WorkTime({
+      startDate: new Date(2022, 3, 20, 7, 0),
+      endDate: new Date(2022, 3, 20, 12, 45),
+      breakTime: 0,
+    });
+    let scheduleA = new Schedule({
+      name: "test schedule",
+      workTime: workTimeA.id,
+    });
+
+    let user = await User.findOne();
+
+    // Wrong id
+    const rep = await supertest(app)
+      .post(`/users/6262ef89b6b72b18c716269d/calendar/add`)
+      .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
+      .expect(400);
+    expect(rep.body.success).toBeFalsy();
+
+    // wrong date format
+    const repB = await supertest(app)
+      .post(`/users/${user.id}/calendar/add`)
+      .send({ scheduleId: scheduleA.id, date: "2022-06-22T20:00" })
+      .expect(400);
+    expect(repB.body.success).toBeFalsy();
+    expect(repB.body.errors[0].param).toBe("date");
+
+    // wrong date schemaId
+    const repC = await supertest(app)
+      .post(`/users/${user.id}/calendar/add`)
+      .send({ scheduleId: "6262ef89b6b72b18c71626", date: "2022-06-22" })
+      .expect(400);
+    expect(repC.body.success).toBeFalsy();
+    expect(repC.body.errors[0].param).toBe("scheduleId");
   } catch (err) {
     throw err;
   }

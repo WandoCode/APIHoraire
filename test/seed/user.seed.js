@@ -1,17 +1,28 @@
-module.exports = [
-  {
-    username: "Zello",
-    email: "testing1@gmail.com",
-    password: "12345678",
-  },
-  {
-    username: "Vincy",
-    email: "testing2@gmail.com",
-    password: "12345678",
-  },
-  {
-    username: "Shion",
-    email: "testing3@gmail.com",
-    password: "12345678",
-  },
-];
+module.exports = {
+  User: [
+    {
+      username: "Zello",
+      password: "12345678",
+    },
+    {
+      username: "Vincy",
+      password: "12345678",
+    },
+    {
+      username: "Shion",
+      password: "12345678",
+    },
+    {
+      username: "Daddji",
+      password: "12345 6788",
+    },
+    {
+      username: "Plugos",
+      password: "12345678z",
+    },
+    {
+      username: "Ridiculpo",
+      password: "12345678aaa",
+    },
+  ],
+};

@@ -1,6 +1,6 @@
 const User = require("../models/user.model");
+
 const { objectIsInDB } = require("../heplers/function");
-const passport = require("passport");
 
 /* GET all users from db */
 exports.get_all_users = async (req, res, next) => {
@@ -25,7 +25,7 @@ exports.get_user = async (req, res, next) => {
         .send({ message: "User found", success: true, datas: usersFound });
     } else {
       res
-        .status(204)
+        .status(400)
         .send({ message: "No user found with the given id", success: false });
     }
   } catch (err) {
@@ -36,7 +36,7 @@ exports.get_user = async (req, res, next) => {
 exports.post_user = async (req, res, next) => {
   // Form validation is made with middleware in ./routes
   try {
-    let { username, password } = req.body;
+    let { username, password, role = "user" } = req.body;
 
     // Check if username already exists in db
     let userIsInDB = await objectIsInDB({ username }, User);
@@ -46,8 +46,15 @@ exports.post_user = async (req, res, next) => {
         .status(400)
         .send({ message: "Username already exists", success: false });
     }
-    // Save new user in db
-    await User.create({ username, password });
+    // Username is available
+    // Make a new Calendar for the user
+    let newUser = {
+      username,
+      password,
+      calendar: {},
+      role,
+    };
+    await User.create(newUser);
 
     return res.status(201).send({ message: "User created", success: true });
   } catch (err) {
@@ -68,7 +75,7 @@ exports.update_user = async (req, res, next) => {
     // No user found
     if (!userFound) {
       res
-        .status(204)
+        .status(400)
         .send({ message: "No user found with the given id", success: false });
     }
 
@@ -108,7 +115,7 @@ exports.delete_user = async (req, res, next) => {
     // No user found
     if (!userFound) {
       res
-        .status(204)
+        .status(400)
         .send({ message: "No user found with the given id", success: false });
     }
 
@@ -118,6 +125,54 @@ exports.delete_user = async (req, res, next) => {
     res
       .status(200)
       .send({ message: "User successfully deleted", success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Post or update a schedule (by id) in user calendar
+ */
+exports.post_day = async (req, res, next) => {
+  let { scheduleId, date } = req.body;
+  try {
+    //Find user with id
+    let user = await User.findById(req.params.id);
+
+    // No user found
+    if (!user) {
+      return res
+        .status(400)
+        .send({ message: "No user found with the given id", success: false });
+    }
+
+    // Create the calendar field
+    let day = date.getDate().toString();
+    let monthIndex = date.getMonth().toString();
+    let year = date.getFullYear().toString();
+
+    // Check if the year, month and day are already in user db
+    // Create path if necessary
+    if (!user.calendrier[year]) {
+      user.calendrier[year] = {};
+    }
+
+    if (!user.calendrier[year][monthIndex]) {
+      user.calendrier[year][monthIndex] = {};
+    }
+
+    if (!user.calendrier[year][monthIndex][day]) {
+      user.calendrier[year][monthIndex][day] = {};
+    }
+
+    user.calendrier[year][monthIndex][day]["schedule"] = scheduleId;
+    user.markModified("calendrier");
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "Schedule successfully added to the user calendar",
+    });
   } catch (err) {
     next(err);
   }

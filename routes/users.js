@@ -3,10 +3,7 @@ const router = express.Router();
 const passport = require("passport");
 
 const userController = require("../controllers/user.controller");
-const {
-  new_user_validation,
-  display_error,
-} = require("../middleware/validation");
+const val = require("../middleware/validation");
 
 /* GET users listing. */
 router.get("/all", userController.get_all_users);
@@ -17,8 +14,8 @@ router.get("/get/:id", userController.get_user);
 /* POST a new user. */
 router.post(
   "/add",
-  new_user_validation,
-  display_error,
+  val.new_user_validation,
+  val.display_error,
   userController.post_user
 );
 
@@ -27,8 +24,8 @@ router.post(
  */
 router.post(
   "/update/:id",
-  new_user_validation,
-  display_error,
+  val.new_user_validation,
+  val.display_error,
   userController.update_user
 );
 
@@ -41,4 +38,13 @@ router.delete(
   userController.delete_user
 );
 
+/**
+ * Post or update a schedule (by id) in user calendar
+ */
+router.post(
+  "/:id/calendar/add",
+  val.new_schedule,
+  val.display_error,
+  userController.post_day
+);
 module.exports = router;

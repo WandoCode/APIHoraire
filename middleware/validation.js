@@ -29,35 +29,45 @@ exports.new_user_validation = [
     .isEmpty(),
   body("password")
     .trim()
-    .isAlphanumeric()
     .isLength({
       min: datasUser.password.minlength,
       max: datasUser.password.maxlength,
     })
     .not()
     .isEmpty(),
-  body("calendrier").isMongoId().not().isEmpty(),
-  body("role").isIn([...datasUser.role.roles, ""]),
 ];
 
-exports.calendar = [
-  body("date").isDate().not().isEmpty().toDate(),
-  body("schedule").isMongoId(),
-  body("workTime").isMongoId(),
+exports.login = [
+  body("username")
+    .trim()
+    .isAlphanumeric()
+    .isLength({
+      min: datasUser.username.minlength,
+      max: datasUser.username.maxlength,
+    })
+    .not()
+    .isEmpty(),
+  body("password").trim().not().isEmpty(),
 ];
 
 exports.schedule = [
   body("name")
     .trim()
-    .isAlphanumeric()
+    .isAlphanumeric("en-US", { ignore: " -_" })
     .isLength({ min: datasSchedule.name.minlength })
     .not()
     .isEmpty(),
-  body("workTime").isMongoId(),
+  body("startDate").isISO8601().not().isEmpty().toDate(),
+  body("endDate").isISO8601().not().isEmpty().toDate(),
+  body("breakTime").isInt({ min: datasWT.breakTime.min }),
 ];
 
+exports.new_schedule = [
+  body("scheduleId").isMongoId().not().isEmpty(),
+  body("date").isDate().not().isEmpty().toDate(),
+];
 exports.workTime = [
-  body("startDate").isDate().not().isEmpty().toDate(),
-  body("endDate").isDate().not().isEmpty().toDate(),
+  body("startDate").isISO8601().not().isEmpty().toDate(),
+  body("endDate").isISO8601().not().isEmpty().toDate(),
   body("breakTime").isInt({ min: datasWT.breakTime.min }),
 ];

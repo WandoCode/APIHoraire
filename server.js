@@ -30,7 +30,7 @@ app.use(cors());
 /*-------------------------------------------------*/
 
 app.use(passport.initialize());
-require("./config/passport.config");
+require("./middleware/auth");
 
 /***************************************************/
 
@@ -39,9 +39,11 @@ require("./config/passport.config");
 /*-------------------------------------------------*/
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
+const scheduleRouter = require("./routes/schedule");
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
+app.use("/schedule", scheduleRouter);
 /***************************************************/
 
 /*=================================================*/

@@ -16,10 +16,11 @@ const userSchema = new Schema(
       type: String,
       required: datasUser.password.required,
     },
+    // Shedule can be added only by id
     calendrier: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Calendar",
-      required: datasUser.calendrier.required,
+      type: {},
+      default: {},
+      required: true,
     },
     role: {
       type: String,
@@ -27,7 +28,7 @@ const userSchema = new Schema(
       default: datasUser.role.default,
     },
   },
-  // Add automaticattly a field 'CreatedAt' and 'updatedAt' in mongoDB
+  // Add automaticatly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
 );
 

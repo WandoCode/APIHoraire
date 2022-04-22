@@ -16,7 +16,6 @@
       "endDate": { "required": true },
       "breakTime": { "default": 0, "min": 0 }
     },
-    "schedule": { "name": { "minlength": 3, "unique": true } },
-    "calendar": { "date": { "required": true } }
+    "schedule": { "name": { "minlength": 3, "unique": true } }
   }
 }
