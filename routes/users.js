@@ -42,9 +42,19 @@ router.delete(
  * Post or update a schedule (by id) in user calendar
  */
 router.post(
-  "/:id/calendar/add",
+  "/:id/calendar/add/schedule",
   val.new_schedule,
   val.display_error,
   userController.post_day
+);
+
+/**
+ * Post or update a schedule (by id) in user calendar
+ */
+router.post(
+  "/:id/calendar/add/worktime",
+  val.workTime,
+  val.display_error,
+  userController.post_workTime
 );
 module.exports = router;

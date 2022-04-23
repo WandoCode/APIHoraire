@@ -57,17 +57,35 @@ exports.schedule = [
     .isLength({ min: datasSchedule.name.minlength })
     .not()
     .isEmpty(),
-  body("startDate").isISO8601().not().isEmpty().toDate(),
-  body("endDate").isISO8601().not().isEmpty().toDate(),
+  body("startDate").isISO8601().not().isEmpty().not().isDate().toDate(),
+  body("endDate").isISO8601().not().isEmpty().not().isDate().toDate(),
   body("breakTime").isInt({ min: datasWT.breakTime.min }),
+  // Check startDate is < than endDate
+  body("startDate").custom((val, req) => {
+    if (val >= req.body.endDate)
+      throw new Error("StartDate must be before endDate");
+    return true;
+  }),
 ];
 
 exports.new_schedule = [
   body("scheduleId").isMongoId().not().isEmpty(),
   body("date").isDate().not().isEmpty().toDate(),
 ];
+// isISO8601() allows "yyyy-mm-ddThh:mm", isDate() allow only "yyyy-mm-dd"
 exports.workTime = [
-  body("startDate").isISO8601().not().isEmpty().toDate(),
-  body("endDate").isISO8601().not().isEmpty().toDate(),
+  // I want time here
+  body("startDate").isISO8601().not().isEmpty().not().isDate().toDate(),
+  // And here
+  body("endDate").isISO8601().not().isEmpty().toDate().not().isDate(),
   body("breakTime").isInt({ min: datasWT.breakTime.min }),
+  // No time needed here
+  body("date").isDate().not().isEmpty().toDate(),
+  // Check startDate is < than endDate
+  body("startDate").custom((val, { req }) => {
+    if (val >= req.body.endDate) {
+      throw new Error("StartDate must be before endDate");
+    }
+    return true;
+  }),
 ];

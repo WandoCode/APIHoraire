@@ -338,7 +338,7 @@ test("POST and PUT a schedule in user calendar", async () => {
     let user = await User.findOne();
 
     const rep = await supertest(app)
-      .post(`/users/${user.id}/calendar/add`)
+      .post(`/users/${user.id}/calendar/add/schedule`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
@@ -356,7 +356,7 @@ test("POST and PUT a schedule in user calendar", async () => {
       workTime: workTimeA.id,
     });
     const repB = await supertest(app)
-      .post(`/users/${user.id}/calendar/add`)
+      .post(`/users/${user.id}/calendar/add/schedule`)
       .send({ scheduleId: scheduleB.id, date: "2022-06-22" })
       .expect(200);
 
@@ -390,14 +390,14 @@ test("POST a schedule in user calendar with wrong datas", async () => {
 
     // Wrong id
     const rep = await supertest(app)
-      .post(`/users/6262ef89b6b72b18c716269d/calendar/add`)
+      .post(`/users/6262ef89b6b72b18c716269d/calendar/add/schedule`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(400);
     expect(rep.body.success).toBeFalsy();
 
     // wrong date format
     const repB = await supertest(app)
-      .post(`/users/${user.id}/calendar/add`)
+      .post(`/users/${user.id}/calendar/add/schedule`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22T20:00" })
       .expect(400);
     expect(repB.body.success).toBeFalsy();
@@ -405,11 +405,142 @@ test("POST a schedule in user calendar with wrong datas", async () => {
 
     // wrong date schemaId
     const repC = await supertest(app)
-      .post(`/users/${user.id}/calendar/add`)
+      .post(`/users/${user.id}/calendar/add/schedule`)
       .send({ scheduleId: "6262ef89b6b72b18c71626", date: "2022-06-22" })
       .expect(400);
     expect(repC.body.success).toBeFalsy();
     expect(repC.body.errors[0].param).toBe("scheduleId");
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("POST and PUT a worktime in user calendar", async () => {
+  try {
+    let user = await User.findOne();
+
+    const rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T10:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: 50,
+        date: "2022-06-22",
+      })
+      .expect(200);
+
+    // Look into db that datas are correct
+    let userFound = await User.findById(user.id);
+
+    // Date is okay
+    expect(userFound.calendrier["2022"]["5"]["22"].workTime).toBeDefined();
+
+    let workTimeId = userFound.calendrier["2022"]["5"]["22"].workTime;
+
+    expect(rep.body.data.id).toBe(workTimeId);
+
+    // Worktime exist
+    let WT = await WorkTime.findById(workTimeId);
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date("2022-06-22T10:00"));
+    expect(Date(WT.endDate)).toBe(Date("2022-06-22T17:00"));
+    expect(Date(WT.breakTime)).toBe(Date(50));
+
+    // Try to update Datas
+    const repB = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T08:00",
+        endDate: "2022-06-22T16:00",
+        breakTime: 30,
+        date: "2022-06-22",
+      })
+      .expect(200);
+
+    // Look into db that datas are correct
+    let userFoundB = await User.findById(user.id);
+    let workTimeIdB = userFoundB.calendrier["2022"]["5"]["22"].workTime;
+
+    expect(repB.body.data.id).toBe(workTimeIdB);
+
+    // Worktime exist
+    let WTb = await WorkTime.findById(workTimeIdB);
+    expect(WTb).toBeDefined();
+    expect(Date(WTb.startDate)).toBe(Date("2022-06-22T08:00"));
+    expect(Date(WTb.endDate)).toBe(Date("2022-06-22T16:00"));
+    expect(Date(WTb.breakTime)).toBe(Date(30));
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("POST and PUT a worktime in user calendar with wrong datas", async () => {
+  try {
+    let user = await User.findOne();
+
+    // Wrong start and end dates
+    let rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22",
+        endDate: "2022-06-22",
+        breakTime: 50,
+        date: "2022-06-22",
+      })
+      .expect(400);
+
+    // Look into db that datas are correct not saved
+    let userFound = await User.findById(user.id);
+
+    expect(userFound.calendrier["2022"]).toBeUndefined();
+
+    // Wrong breakTime
+    rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T10:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: -50,
+        date: "2022-06-22",
+      })
+      .expect(400);
+
+    // Look into db that datas are correct not saved
+    userFound = await User.findById(user.id);
+
+    expect(userFound.calendrier["2022"]).toBeUndefined();
+
+    // Wrong date
+    rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T10:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: 0,
+        date: "2022-06-22T10:00",
+      })
+      .expect(400);
+
+    // Look into db that datas are correct not saved
+    userFound = await User.findById(user.id);
+
+    expect(userFound.calendrier["2022"]).toBeUndefined();
+
+    // startDate <= endDate
+    rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T18:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: 50,
+        date: "2022-06-22",
+      })
+      .expect(400);
+
+    // Look into db that datas are correct not saved
+    userFound = await User.findById(user.id);
+
+    expect(userFound.calendrier["2022"]).toBeUndefined();
   } catch (err) {
     throw err;
   }

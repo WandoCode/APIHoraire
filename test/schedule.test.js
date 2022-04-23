@@ -10,8 +10,6 @@ const { setupDB } = require("./test-setup");
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
 setupDB(scheduleSeed, false);
 
-/*     workTime model's method and virtual     */
-/*=============================================*/
 test("POST new schedule are added correctly", async () => {
   try {
     const newSchedule = {

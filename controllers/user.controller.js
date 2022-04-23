@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const WorkTime = require("../models/workTime.model");
 
 const { objectIsInDB } = require("../heplers/function");
 
@@ -172,6 +173,72 @@ exports.post_day = async (req, res, next) => {
     res.status(200).send({
       success: true,
       message: "Schedule successfully added to the user calendar",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Post or update a workTime (by id) in user calendar
+ */
+exports.post_workTime = async (req, res, next) => {
+  let { startDate, endDate, breakTime, date } = req.body;
+
+  try {
+    //Find user with id
+    let user = await User.findById(req.params.id);
+
+    // No user found
+    if (!user) {
+      return res.status(400).send({
+        message: "No user found with the given id",
+        success: false,
+      });
+    }
+
+    // Create the calendar field
+    // Check if the year, month and day are already in user db
+    let day = date.getDate().toString();
+    let monthIndex = date.getMonth().toString();
+    let year = date.getFullYear().toString();
+
+    // Create path if necessary
+    if (!user.calendrier[year]) {
+      user.calendrier[year] = {};
+    }
+
+    if (!user.calendrier[year][monthIndex]) {
+      user.calendrier[year][monthIndex] = {};
+    }
+
+    if (!user.calendrier[year][monthIndex][day]) {
+      user.calendrier[year][monthIndex][day] = {};
+    }
+
+    // Check if worktime already exist à that date
+    if (user.calendrier[year][monthIndex][day]["workTime"]) {
+      // Delete that instance of worktime from DB
+      WorkTime.findByIdAndRemove(
+        user.calendrier[year][monthIndex][day]["workTime"]
+      );
+    }
+
+    // Create the new workTime instance in db
+    let WT = await WorkTime.create({
+      startDate,
+      endDate,
+      breakTime,
+    });
+
+    user.calendrier[year][monthIndex][day]["workTime"] = WT.id;
+    user.markModified("calendrier");
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "Worktime successfully added to the user calendar",
+      data: { id: WT.id },
     });
   } catch (err) {
     next(err);
