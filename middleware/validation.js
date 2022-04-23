@@ -89,3 +89,5 @@ exports.workTime = [
     return true;
   }),
 ];
+
+exports.date = body("date").isDate().not().isEmpty().toDate();

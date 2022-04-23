@@ -18,17 +18,11 @@ exports.get_all_users = async (req, res, next) => {
 /* GET a user from db with id */
 exports.get_user = async (req, res, next) => {
   try {
-    let usersFound = await User.findById(req.params.id);
-
-    if (usersFound) {
-      res
-        .status(200)
-        .send({ message: "User found", success: true, datas: usersFound });
-    } else {
-      res
-        .status(400)
-        .send({ message: "No user found with the given id", success: false });
-    }
+    // user loaded in findUser middleware (see routes)
+    let usersFound = req.user;
+    res
+      .status(200)
+      .send({ message: "User found", success: true, datas: usersFound });
   } catch (err) {
     next(err);
   }
@@ -70,15 +64,8 @@ exports.update_user = async (req, res, next) => {
   // Form validation is made with middleware in ./routes
   let { username, password } = req.body;
   try {
-    // Test if the given id is in DB
-    let userFound = await User.findById(req.params.id);
-
-    // No user found
-    if (!userFound) {
-      res
-        .status(400)
-        .send({ message: "No user found with the given id", success: false });
-    }
+    // See middleware findUser
+    let userFound = req.user;
 
     // If Username change
     if (userFound.username !== username) {
@@ -111,17 +98,11 @@ exports.update_user = async (req, res, next) => {
  */
 exports.delete_user = async (req, res, next) => {
   try {
-    // Test if the given id is in DB
-    let userFound = await User.findById(req.params.id);
-    // No user found
-    if (!userFound) {
-      res
-        .status(400)
-        .send({ message: "No user found with the given id", success: false });
-    }
+    // See middleware findUser
+    let user = req.user;
 
     // Process request
-    await User.findByIdAndRemove(req.params.id);
+    await User.findByIdAndRemove(user.id);
 
     res
       .status(200)
@@ -137,15 +118,8 @@ exports.delete_user = async (req, res, next) => {
 exports.post_day = async (req, res, next) => {
   let { scheduleId, date } = req.body;
   try {
-    //Find user with id
-    let user = await User.findById(req.params.id);
-
-    // No user found
-    if (!user) {
-      return res
-        .status(400)
-        .send({ message: "No user found with the given id", success: false });
-    }
+    // user loaded in findUser middleware (see routes)
+    let user = req.user;
 
     // Create the calendar field
     let day = date.getDate().toString();
@@ -186,16 +160,8 @@ exports.post_workTime = async (req, res, next) => {
   let { startDate, endDate, breakTime, date } = req.body;
 
   try {
-    //Find user with id
-    let user = await User.findById(req.params.id);
-
-    // No user found
-    if (!user) {
-      return res.status(400).send({
-        message: "No user found with the given id",
-        success: false,
-      });
-    }
+    // user loaded in findUser middleware (see routes)
+    let user = req.user;
 
     // Create the calendar field
     // Check if the year, month and day are already in user db
@@ -240,6 +206,20 @@ exports.post_workTime = async (req, res, next) => {
       message: "Worktime successfully added to the user calendar",
       data: { id: WT.id },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Delete a workTime in user calendar
+ */
+exports.delete_workTime = async (req, res, next) => {
+  try {
+    let { date } = req.body;
+    // user loaded in findUser middleware (see routes)
+    let user = req.user;
+    // Check if user exists
   } catch (err) {
     next(err);
   }
