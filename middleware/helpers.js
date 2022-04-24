@@ -9,6 +9,8 @@ exports.findUser = async (req, res, next) => {
     return res.status(400).send({
       message: `User not found with the given id`,
       success: false,
+      user: user,
+      id: req.params.id,
     });
   }
 

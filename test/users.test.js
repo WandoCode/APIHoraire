@@ -545,3 +545,100 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
     throw err;
   }
 });
+
+test("DELETE a worktime in user calendar", async () => {
+  try {
+    let user = await User.findOne();
+
+    // Create a worktime and put it in user calendar
+    let rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T08:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: 60,
+        date: "2022-06-22",
+      })
+      .expect(200);
+
+    // Delete worktime
+    let repB = await supertest(app)
+      .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .send({
+        date: "2022-06-22",
+      })
+      .expect(200);
+
+    // Test worktime is no in db anymore
+    let WT = await WorkTime.findById(rep.body.data.id);
+    expect(WT).toBeNull();
+
+    // Test that worktime is not anymore in the user calendar
+    let userTest = await User.findById(user.id);
+    expect(userTest).toBeDefined();
+    expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBeNull();
+  } catch (err) {
+    throw err;
+  }
+});
+
+test.only("DELETE a worktime in user calendar with wrong datas", async () => {
+  try {
+    let user = await User.findOne();
+
+    // Create a worktime and put it in user calendar
+    let rep = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .send({
+        startDate: "2022-06-22T08:00",
+        endDate: "2022-06-22T17:00",
+        breakTime: 60,
+        date: "2022-06-22",
+      })
+      .expect(200);
+
+    let WTId = rep.body.data.id;
+
+    // Try to delete with wrong id
+    rep = await supertest(app)
+      .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/worktime`)
+      .send({
+        date: "2022-06-22",
+      })
+      .expect(400);
+
+    // Try to delete with wrong date format
+    rep = await supertest(app)
+      .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .send({
+        date: "2022-06-22T22:00",
+      })
+      .expect(400);
+
+    // Test that worktime is still in the user calendar
+    let userTest = await User.findById(user.id);
+    expect(userTest).toBeDefined();
+    expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBe(WTId);
+    //Test that WT instance still exists
+    let WT = await WorkTime.findById(WTId);
+    expect(WT).toBeDefined();
+
+    // Try to delete with wrong date format
+    rep = await supertest(app)
+      .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .send({
+        date: "2022-06-22T22:00",
+      })
+      .expect(400);
+
+    // Test that worktime is still in the user calendar
+    userTest = await User.findById(user.id);
+    expect(userTest).toBeDefined();
+    expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBe(WTId);
+    //Test that WT instance still exists
+    WT = await WorkTime.findById(WTId);
+    expect(WT).toBeDefined();
+  } catch (err) {
+    throw err;
+  }
+});

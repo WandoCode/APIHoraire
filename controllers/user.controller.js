@@ -170,19 +170,15 @@ exports.post_workTime = async (req, res, next) => {
     let year = date.getFullYear().toString();
 
     // Create path if necessary
-    if (!user.calendrier[year]) {
-      user.calendrier[year] = {};
-    }
+    if (!user.calendrier[year]) user.calendrier[year] = {};
 
-    if (!user.calendrier[year][monthIndex]) {
+    if (!user.calendrier[year][monthIndex])
       user.calendrier[year][monthIndex] = {};
-    }
 
-    if (!user.calendrier[year][monthIndex][day]) {
+    if (!user.calendrier[year][monthIndex][day])
       user.calendrier[year][monthIndex][day] = {};
-    }
 
-    // Check if worktime already exist à that date
+    // Check if worktime already exist at that date
     if (user.calendrier[year][monthIndex][day]["workTime"]) {
       // Delete that instance of worktime from DB
       WorkTime.findByIdAndRemove(
@@ -219,7 +215,38 @@ exports.delete_workTime = async (req, res, next) => {
     let { date } = req.body;
     // user loaded in findUser middleware (see routes)
     let user = req.user;
-    // Check if user exists
+
+    // Check if the year, month and day are already in user db
+    let day = date.getDate().toString();
+    let monthIndex = date.getMonth().toString();
+    let year = date.getFullYear().toString();
+
+    // Try to recover the workTime id instance in user.calendrier.year.month.day.workTime
+    let workTimeToDel =
+      ((((user.calendrier || {})[year] || {})[monthIndex] || {})[day] || {})[
+        "workTime"
+      ] || null;
+
+    // No workTime
+    if (!workTimeToDel) {
+      res.status(400).send({
+        message: "No workTime found for the given date",
+        success: false,
+      });
+    }
+
+    // Remove workTime from db
+    await WorkTime.findByIdAndRemove(workTimeToDel);
+
+    // Remove from user calendar instance
+    user.calendrier[year][monthIndex][day]["workTime"] = null;
+    user.markModified("calendrier");
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "Worktime successfully deleted from the user calendar and DB",
+    });
   } catch (err) {
     next(err);
   }
