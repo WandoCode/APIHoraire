@@ -1,6 +1,6 @@
 const User = require("../models/user.model");
 const WorkTime = require("../models/workTime.model");
-
+const Schedule = require("../models/schedule.model");
 const { objectIsInDB } = require("../heplers/function");
 
 /* GET all users from db */
@@ -147,6 +147,51 @@ exports.post_day = async (req, res, next) => {
     res.status(200).send({
       success: true,
       message: "Schedule successfully added to the user calendar",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Delete a schedule in user calendar
+ */
+exports.delete_schedule = async (req, res, next) => {
+  try {
+    let { date } = req.body;
+    // user loaded in findUser middleware (see routes)
+    let user = req.user;
+
+    // Check if the year, month and day are already in user db
+    let day = date.getDate().toString();
+    let monthIndex = date.getMonth().toString();
+    let year = date.getFullYear().toString();
+
+    // Try to recover the schedule id instance in user.calendrier.year.month.day.schedule
+    let scheduleToDel =
+      ((((user.calendrier || {})[year] || {})[monthIndex] || {})[day] || {})[
+        "schedule"
+      ] || null;
+
+    // No schedule
+    if (!scheduleToDel) {
+      res.status(400).send({
+        message: "No schedule found for the given date",
+        success: false,
+      });
+    }
+
+    // Remove schedule from db
+    await Schedule.findByIdAndRemove(scheduleToDel);
+
+    // Remove from user calendar instance
+    user.calendrier[year][monthIndex][day]["schedule"] = null;
+    user.markModified("calendrier");
+    await user.save();
+
+    res.status(200).send({
+      success: true,
+      message: "Schedule successfully deleted from the user calendar and DB",
     });
   } catch (err) {
     next(err);
