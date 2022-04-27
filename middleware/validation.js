@@ -61,7 +61,7 @@ exports.schedule = [
   body("endDate").isISO8601().not().isEmpty().not().isDate().toDate(),
   body("breakTime").isInt({ min: datasWT.breakTime.min }),
   // Check startDate is < than endDate
-  body("startDate").custom((val, req) => {
+  body("startDate").custom((val, { req }) => {
     if (val >= req.body.endDate)
       throw new Error("StartDate must be before endDate");
     return true;

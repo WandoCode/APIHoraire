@@ -10,6 +10,24 @@ const { setupDB } = require("./test-setup");
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
 setupDB(scheduleSeed, false);
 
+test("GET All schedules", async () => {
+  try {
+    let rep = await supertest(app).get(`/schedule/all`).expect(200);
+
+    // Every schedule has been found
+    expect(rep.body.datas).toBeDefined();
+    expect(rep.body.datas.length).toBe(scheduleSeed.Schedule.length);
+
+    // If no schedule in DB
+    await Schedule.deleteMany();
+    rep = await supertest(app).get(`/schedule/all`).expect(400);
+    expect(rep.body.succes).toBeFalsy();
+    expect(rep.body.datas).toBeUndefined();
+  } catch (err) {
+    throw err;
+  }
+});
+
 test("POST new schedule are added correctly", async () => {
   try {
     const newSchedule = {
@@ -43,5 +61,151 @@ test("POST new schedule are added correctly", async () => {
   }
 });
 
-// Test unique for schedule name
-//test startDate < endDate = error
+test("POST new schedule with wrong datas", async () => {
+  try {
+    // Wrong name length
+    let newSchedule = {
+      name: "a",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(400);
+
+    // Not saved in DB
+    expect(rep.body.success).toBeFalsy();
+    // Not schedule saved
+    let SC = await Schedule.find({ name: newSchedule.name });
+    expect(SC.length).toBe(0);
+    // No worktime instance saved in DB for the schedule
+    let WT = await WorkTime.find({ startDate: Date("2022-06-22T10:00") });
+    expect(WT.length).toBe(0);
+
+    /* Wrong breaktime */
+    newSchedule = {
+      name: "a name",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: -2,
+    };
+
+    rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(400);
+
+    // Not saved in DB
+    expect(rep.body.success).toBeFalsy();
+    // Not schedule saved
+    SC = await Schedule.find({ name: newSchedule.name });
+    expect(SC.length).toBe(0);
+    // No worktime instance saved in DB for the schedule
+    WT = await WorkTime.find({ startDate: Date("2022-06-22T10:00") });
+    expect(WT.length).toBe(0);
+
+    /* Wrong date format*/
+    newSchedule = {
+      name: "a name",
+      startDate: "2022-06-22",
+      endDate: "2022-06-22T17:00",
+      breakTime: 30,
+    };
+
+    rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(400);
+
+    // Not saved in DB
+    expect(rep.body.success).toBeFalsy();
+    // Not schedule saved
+    SC = await Schedule.find({ name: newSchedule.name });
+    expect(SC.length).toBe(0);
+    // No worktime instance saved in DB for the schedule
+    WT = await WorkTime.find({ startDate: Date("2022-06-22T10:00") });
+    expect(WT.length).toBe(0);
+
+    /* EndDate  < startDate */
+    newSchedule = {
+      name: "a name",
+      startDate: "2022-06-22T17:00",
+      endDate: "2022-06-22T10:00",
+      breakTime: 30,
+    };
+
+    rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(400);
+
+    // Not saved in DB
+    expect(rep.body.success).toBeFalsy();
+    // Not schedule saved
+    SC = await Schedule.find({ name: newSchedule.name });
+    expect(SC.length).toBe(0);
+    // No worktime instance saved in DB for the schedule
+    WT = await WorkTime.find({ startDate: Date("2022-06-22T10:00") });
+    expect(WT.length).toBe(0);
+
+    /* Same name */
+    newSchedule = {
+      name: "a name",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 30,
+    };
+
+    await supertest(app).post(`/schedule/add`).send(newSchedule).expect(200);
+
+    rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(400);
+    // Not saved in DB
+    expect(rep.body.success).toBeFalsy();
+    // No schedule saved again
+    SC = await Schedule.find({ name: newSchedule.name });
+    expect(SC.length).toBe(1);
+    // No worktime instance saved in DB for the schedule
+    WT = await WorkTime.find({ startDate: "2022-06-22T10:00" });
+    expect(WT.length).toBe(1);
+  } catch (err) {
+    throw err;
+  }
+});
+
+test.only("GET schedule by id", async () => {
+  try {
+    const newSchedule = {
+      name: "a schedule",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(200);
+
+    repB = await supertest(app)
+      .get(`/schedule/get/${rep.body.data.id}`)
+      .expect(200);
+
+    let SC = await Schedule.findById(rep.body.data.id);
+
+    expect(repB.body.datas.name).toBe(SC.name);
+    expect(repB.body.datas._id).toBe(SC.id);
+    // ObjectID have a .str attribute
+    expect(repB.body.datas.workTime.str).toBe(SC.workTime.str);
+
+    // Wrong ID
+    repB = await supertest(app).get(`/schedule/get/${SC.workTime}`).expect(400);
+  } catch (err) {
+    throw err;
+  }
+});

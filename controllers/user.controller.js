@@ -7,6 +7,12 @@ const { objectIsInDB } = require("../heplers/function");
 exports.get_all_users = async (req, res, next) => {
   try {
     let usersFound = await User.find();
+
+    if (usersFound.length === 0) {
+      // TODO change HTML status code
+      res.status(400).send({ message: "No users found in db", success: false });
+    }
+
     res
       .status(200)
       .send({ message: "Users found", success: true, datas: usersFound });

@@ -2,6 +2,45 @@ const Schedule = require("../models/schedule.model");
 const WorkTime = require("../models/workTime.model");
 const { objectIsInDB } = require("../heplers/function");
 
+/* GET schedule listing. */
+exports.get_all_schedule = async (req, res, next) => {
+  try {
+    let scheduleFound = await Schedule.find();
+
+    if (scheduleFound.length === 0) {
+      res.status(400).send({
+        message: "No schedule found in db",
+        success: false,
+        data: scheduleFound,
+      });
+    }
+
+    res.status(200).send({
+      message: "Schedules found",
+      success: true,
+      datas: scheduleFound,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* GET a schedule by id. */
+exports.get_schedule = async (req, res, next) => {
+  try {
+    // Via middleware findSchedule
+    let scheduleFound = req.schedule;
+
+    res.status(200).send({
+      message: "Schedules found",
+      success: true,
+      datas: scheduleFound,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 /* POST a new schedule. */
 exports.post_schedule = async (req, res, next) => {
   try {

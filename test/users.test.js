@@ -30,9 +30,9 @@ test("GET /users/all get all users when db is empty", async () => {
     // Empties user collection in db before test
     await User.deleteMany();
 
-    let reponse = await supertest(app).get("/users/all").expect(200);
-    expect(Array.isArray(reponse.body.datas)).toBeTruthy();
-    expect(reponse.body.datas.length).toBe(0);
+    let reponse = await supertest(app).get("/users/all").expect(400);
+    expect(Array.isArray(reponse.body.success)).toBeFalsy();
+    expect(reponse.body.datas).toBeUndefined();
   } catch (err) {
     throw err;
   }
@@ -415,7 +415,7 @@ test("POST a schedule in user calendar with wrong datas", async () => {
   }
 });
 
-test.only("DELETE a schedule in user calendar", async () => {
+test("DELETE a schedule in user calendar", async () => {
   try {
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
@@ -458,7 +458,7 @@ test.only("DELETE a schedule in user calendar", async () => {
   }
 });
 
-test.only("DELETE a schedule in user calendar with wrong datas", async () => {
+test("DELETE a schedule in user calendar with wrong datas", async () => {
   try {
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
