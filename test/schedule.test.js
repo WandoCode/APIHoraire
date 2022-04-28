@@ -178,7 +178,7 @@ test("POST new schedule with wrong datas", async () => {
   }
 });
 
-test.only("GET schedule by id", async () => {
+test("GET schedule by id", async () => {
   try {
     const newSchedule = {
       name: "a schedule",
@@ -205,6 +205,227 @@ test.only("GET schedule by id", async () => {
 
     // Wrong ID
     repB = await supertest(app).get(`/schedule/get/${SC.workTime}`).expect(400);
+    expect(repB.body.success).toBeFalsy();
+  } catch (err) {
+    throw err;
+  }
+});
+
+test.only("PUT schedule by id", async () => {
+  try {
+    // Test setup
+    const newSchedule = {
+      name: "a schedule",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(200);
+
+    // Test begin
+    // Change name
+    let majSchedule = {
+      name: "a schedule 2",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majSchedule)
+      .expect(200);
+
+    expect(repB.body.success).toBeTruthy();
+
+    // Check db has been updated
+    let SC = await Schedule.findById(rep.body.data.id);
+    let WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(newSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(newSchedule.endDate));
+    expect(WT.breakTime).toBe(newSchedule.breakTime);
+
+    // Change startDate
+    majSchedule = {
+      name: majSchedule.name,
+      startDate: "2022-06-22T12:00",
+      endDate: majSchedule.endDate,
+      breakTime: majSchedule.breakTime,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majSchedule)
+      .expect(200);
+
+    expect(repB.body.success).toBeTruthy();
+
+    // Check db has been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Change endDate
+    majSchedule = {
+      name: "a schedule 2",
+      startDate: "2022-06-22T12:00",
+      endDate: "2022-06-22T20:00",
+      breakTime: 60,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majSchedule)
+      .expect(200);
+
+    expect(repB.body.success).toBeTruthy();
+
+    // Check db has been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Change breakTime
+    majSchedule = {
+      name: majSchedule.name,
+      startDate: majSchedule.startDate,
+      endDate: majSchedule.endDate,
+      breakTime: 15,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majSchedule)
+      .expect(200);
+
+    expect(repB.body.success).toBeTruthy();
+
+    // Check db has been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Wrong name (same than one from the seed)
+    majScheduleB = {
+      name: "shedule A",
+      startDate: majSchedule.startDate,
+      endDate: majSchedule.endDate,
+      breakTime: majSchedule.breakTime,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majScheduleB)
+      .expect(400);
+
+    expect(repB.body.success).toBeFalsy();
+
+    // Check db has not been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Wrong date format
+    majScheduleB = {
+      name: majSchedule.name,
+      startDate: "2022-06-22",
+      endDate: majSchedule.endDate,
+      breakTime: majSchedule.breakTime,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majScheduleB)
+      .expect(400);
+
+    expect(repB.body.success).toBeFalsy();
+
+    // Check db has not been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Wrong breakTime
+    majScheduleB = {
+      name: majSchedule.name,
+      startDate: majSchedule.startDate,
+      endDate: majSchedule.endDate,
+      breakTime: -5,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majScheduleB)
+      .expect(400);
+
+    expect(repB.body.success).toBeFalsy();
+
+    // Check db has not been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Wrong/ ENDdATE<startdate
+    majScheduleB = {
+      name: majSchedule.name,
+      startDate: "2022-07-10T22:00",
+      endDate: "2022-07-10T10:00",
+      breakTime: majSchedule.breakTime,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/${rep.body.data.id}`)
+      .send(majScheduleB)
+      .expect(400);
+
+    expect(repB.body.success).toBeFalsy();
+
+    // Check db has not been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
   } catch (err) {
     throw err;
   }

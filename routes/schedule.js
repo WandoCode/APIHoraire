@@ -24,6 +24,13 @@ router.post(
 /**
  * PUT update schedule data
  */
+router.put(
+  "/put/:id",
+  val.schedule,
+  val.display_error,
+  findSchedule,
+  scheduleController.put_schedule
+);
 
 /**
  * DELETE a schedule

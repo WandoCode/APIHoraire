@@ -55,14 +55,6 @@ exports.post_schedule = async (req, res, next) => {
         .send({ message: "Name already exists", success: false });
     }
 
-    // startDate must be before endDate
-    if (startDate >= endDate) {
-      return res.status(400).send({
-        message: "Starting date should be before end date",
-        success: false,
-      });
-    }
-
     // Create a new workTime instance
     let worktime = await WorkTime.create({
       startDate,
@@ -76,6 +68,53 @@ exports.post_schedule = async (req, res, next) => {
       message: "Schedule added",
       success: true,
       data: { id: schedule.id },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * PUT update schedule data
+ */
+exports.put_schedule = async (req, res, next) => {
+  try {
+    let { name, startDate, endDate, breakTime } = req.body;
+    let oldSchedule = req.schedule;
+
+    // If name change, new "name" must be unique
+    if (oldSchedule.name !== name) {
+      let nameExists = await objectIsInDB({ name }, Schedule);
+      if (nameExists) {
+        // name is already in db
+        return res
+          .status(400)
+          .send({ message: "Name already exists", success: false });
+      }
+
+      // Process name update
+      await Schedule.findByIdAndUpdate(oldSchedule.id, { name: name });
+    }
+
+    // if breaktime or end or start date change, worktime instance must update
+    let workTimeID = oldSchedule.workTime;
+    let oldWorkTime = await WorkTime.findById(workTimeID);
+    if (
+      Date(startDate) !== Date(oldWorkTime.startDate) ||
+      Date(endDate) !== Date(oldWorkTime.endDate) ||
+      breakTime !== oldWorkTime.breakTime
+    ) {
+      let worktime = {
+        startDate,
+        endDate,
+        breakTime,
+      };
+      await WorkTime.findByIdAndUpdate(workTimeID, worktime);
+    }
+
+    res.status(200).send({
+      message: "Schedule updated",
+      success: true,
     });
   } catch (err) {
     next(err);
