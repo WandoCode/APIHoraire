@@ -46,10 +46,12 @@ async function seedDatabase(runSaveMiddleware = false, seed) {
 }
 
 module.exports = {
-  setupDB(seed, runSaveMiddleware = false) {
+  setupDB(seed, dbName, runSaveMiddleware = false) {
     // Connect with Mongoose (this can replace the mongodb-memory-server method)
     beforeAll(async () => {
-      await mongoose.connect(process.env.TEST_DB_LINK);
+      await mongoose.connect(
+        process.env.TEST_DB_LINK.replace("<DBNAME>", dbName)
+      );
     });
 
     // Seed Db with datas if needed

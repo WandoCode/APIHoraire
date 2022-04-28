@@ -11,7 +11,7 @@ const { genStringWithLength } = require("../heplers/function");
 const datasUser = require("../config/datas.json").models.users;
 
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
-setupDB(userSeed, true);
+setupDB(userSeed, "users", true);
 
 /*     USER GET     */
 /*==================*/

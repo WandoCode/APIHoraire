@@ -18,7 +18,7 @@ exports.findUser = async (req, res, next) => {
     req.user = user;
     next();
   } catch (err) {
-    next(err);
+    res.status(400).send({ message: "unknown error" });
   }
 };
 
@@ -39,6 +39,6 @@ exports.findSchedule = async (req, res, next) => {
     req.schedule = schedule;
     next();
   } catch (err) {
-    next(err);
+    res.status(400).send({ message: "unknown error" });
   }
 };

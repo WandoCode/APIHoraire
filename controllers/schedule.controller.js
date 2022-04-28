@@ -120,3 +120,26 @@ exports.put_schedule = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * DELETE a schedule
+ */
+exports.delete_schedule = async (req, res, next) => {
+  try {
+    // Via middleware findSchedule
+    let scheduleFound = req.schedule;
+
+    // Delete associated woktime
+    await WorkTime.findByIdAndRemove(scheduleFound.workTime);
+
+    // Delete schedule instance
+    await Schedule.findByIdAndRemove(scheduleFound.id);
+
+    res.status(200).send({
+      message: "Schedules deleted",
+      success: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

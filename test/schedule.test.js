@@ -8,7 +8,7 @@ const app = require("../server");
 const { setupDB } = require("./test-setup");
 
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
-setupDB(scheduleSeed, false);
+setupDB(scheduleSeed, "schedule", false);
 
 test("GET All schedules", async () => {
   try {
@@ -211,7 +211,7 @@ test("GET schedule by id", async () => {
   }
 });
 
-test.only("PUT schedule by id", async () => {
+test("PUT schedule by id", async () => {
   try {
     // Test setup
     const newSchedule = {
@@ -279,10 +279,10 @@ test.only("PUT schedule by id", async () => {
 
     // Change endDate
     majSchedule = {
-      name: "a schedule 2",
-      startDate: "2022-06-22T12:00",
+      name: majSchedule.name,
+      startDate: majSchedule.startDate,
       endDate: "2022-06-22T20:00",
-      breakTime: 60,
+      breakTime: majSchedule.breakTime,
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
@@ -426,6 +426,97 @@ test.only("PUT schedule by id", async () => {
     expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
     expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
     expect(WT.breakTime).toBe(majSchedule.breakTime);
+
+    // Wrong id
+    majScheduleB = {
+      name: majSchedule.name,
+      startDate: "2022-07-10T22:00",
+      endDate: "2022-07-10T10:00",
+      breakTime: majSchedule.breakTime,
+    };
+    repB = await supertest(app)
+      .put(`/schedule/put/1231564879846514`)
+      .send(majScheduleB)
+      .expect(400);
+
+    expect(repB.body.success).toBeFalsy();
+
+    // Check db has not been updated
+    SC = await Schedule.findById(rep.body.data.id);
+    WT = await WorkTime.findById(SC.workTime);
+
+    expect(SC.name).toBe(majSchedule.name);
+    expect(SC.workTime).toBeDefined();
+    expect(WT).toBeDefined();
+    expect(Date(WT.startDate)).toBe(Date(majSchedule.startDate));
+    expect(Date(WT.endDate)).toBe(Date(majSchedule.endDate));
+    expect(WT.breakTime).toBe(majSchedule.breakTime);
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("DELETE a schedule by id", async () => {
+  try {
+    // Test setup
+    const newSchedule = {
+      name: "a schedule",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(200);
+
+    let SC = await Schedule.findById(rep.body.data.id);
+    let WT = await WorkTime.findById(SC.workTime);
+
+    // Try delete
+    let repB = await supertest(app)
+      .delete(`/schedule/delete/${rep.body.data.id}`)
+      .expect(200);
+
+    let SCB = await Schedule.findById(SC.id);
+    let WTB = await WorkTime.findById(WT.id);
+
+    expect(SCB).toBeNull();
+    expect(WTB).toBeNull();
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("DELETE a schedule with wrong id", async () => {
+  try {
+    // Test setup
+    const newSchedule = {
+      name: "a schedule",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(200);
+
+    let SC = await Schedule.findById(rep.body.data.id);
+    let WT = await WorkTime.findById(SC.workTime);
+
+    // try delete with wrong id
+    repB = await supertest(app)
+      .delete(`/schedule/delete/${23123546854246}`)
+      .expect(400);
+
+    SCB = await Schedule.findById(SC.id);
+    WTB = await WorkTime.findById(WT.id);
+
+    expect(SCB).not.toBeNull();
+    expect(WTB).not.toBeNull();
   } catch (err) {
     throw err;
   }

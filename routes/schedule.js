@@ -35,5 +35,6 @@ router.put(
 /**
  * DELETE a schedule
  */
+router.delete("/delete/:id", findSchedule, scheduleController.delete_schedule);
 
 module.exports = router;
