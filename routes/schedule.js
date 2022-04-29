@@ -7,6 +7,8 @@ const { findSchedule } = require("../middleware/helpers");
 const { userIs } = require("../middleware/perm");
 const val = require("../middleware/validation");
 
+// TODO: test for 'userIs'
+
 /* GET schedule listing. */
 router.get("/all", scheduleController.get_all_schedule);
 
@@ -17,7 +19,7 @@ router.get("/get/:id", findSchedule, scheduleController.get_schedule);
 router.post(
   "/add",
   passport.authenticate("jwt", { session: false }),
-  userIs("admin", "user"),
+  userIs("admin"),
   val.schedule,
   val.display_error,
   scheduleController.post_schedule
@@ -28,6 +30,8 @@ router.post(
  */
 router.put(
   "/put/:id",
+  passport.authenticate("jwt", { session: false }),
+  userIs("admin"),
   val.schedule,
   val.display_error,
   findSchedule,
@@ -37,6 +41,12 @@ router.put(
 /**
  * DELETE a schedule
  */
-router.delete("/delete/:id", findSchedule, scheduleController.delete_schedule);
+router.delete(
+  "/delete/:id",
+  passport.authenticate("jwt", { session: false }),
+  userIs("admin"),
+  findSchedule,
+  scheduleController.delete_schedule
+);
 
 module.exports = router;

@@ -31,6 +31,11 @@ module.exports = {
       password: "12345678",
       role: "admin",
     },
+    {
+      username: "Bello",
+      password: "1234567899",
+      role: "user",
+    },
   ],
   Schedule: [
     {

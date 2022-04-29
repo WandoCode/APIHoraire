@@ -2,13 +2,13 @@ const supertest = require("supertest");
 const WorkTime = require("../models/workTime.model");
 const Schedule = require("../models/schedule.model");
 const scheduleSeed = require("./seed/schedule.seed");
-
+const User = require("../models/user.model");
 const app = require("../server");
 
 const { setupDB } = require("./test-setup");
 
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
-setupDB(scheduleSeed, "schedule", false);
+setupDB(scheduleSeed, "schedule", true);
 
 test("GET All schedules", async () => {
   try {
@@ -30,14 +30,25 @@ test("GET All schedules", async () => {
 
 test("POST new schedule are added correctly", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
     const newSchedule = {
       name: "a schedule",
       startDate: "2022-06-22T10:00",
       endDate: "2022-06-22T17:00",
       breakTime: 60,
     };
+
     const rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(200);
 
@@ -63,6 +74,15 @@ test("POST new schedule are added correctly", async () => {
 
 test("POST new schedule with wrong datas", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
     // Wrong name length
     let newSchedule = {
       name: "a",
@@ -73,6 +93,7 @@ test("POST new schedule with wrong datas", async () => {
 
     let rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(400);
 
@@ -95,6 +116,7 @@ test("POST new schedule with wrong datas", async () => {
 
     rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(400);
 
@@ -117,6 +139,7 @@ test("POST new schedule with wrong datas", async () => {
 
     rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(400);
 
@@ -139,6 +162,7 @@ test("POST new schedule with wrong datas", async () => {
 
     rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(400);
 
@@ -159,10 +183,15 @@ test("POST new schedule with wrong datas", async () => {
       breakTime: 30,
     };
 
-    await supertest(app).post(`/schedule/add`).send(newSchedule).expect(200);
+    await supertest(app)
+      .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
+      .send(newSchedule)
+      .expect(200);
 
     rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(400);
     // Not saved in DB
@@ -180,6 +209,16 @@ test("POST new schedule with wrong datas", async () => {
 
 test("GET schedule by id", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     const newSchedule = {
       name: "a schedule",
       startDate: "2022-06-22T10:00",
@@ -189,6 +228,7 @@ test("GET schedule by id", async () => {
 
     let rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(200);
 
@@ -213,7 +253,15 @@ test("GET schedule by id", async () => {
 
 test("PUT schedule by id", async () => {
   try {
-    // Test setup
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
     const newSchedule = {
       name: "a schedule",
       startDate: "2022-06-22T10:00",
@@ -223,6 +271,7 @@ test("PUT schedule by id", async () => {
 
     let rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(200);
 
@@ -236,6 +285,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majSchedule)
       .expect(200);
 
@@ -261,6 +311,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majSchedule)
       .expect(200);
 
@@ -286,6 +337,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majSchedule)
       .expect(200);
 
@@ -311,6 +363,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majSchedule)
       .expect(200);
 
@@ -336,6 +389,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majScheduleB)
       .expect(400);
 
@@ -361,6 +415,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majScheduleB)
       .expect(400);
 
@@ -386,6 +441,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majScheduleB)
       .expect(400);
 
@@ -411,6 +467,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majScheduleB)
       .expect(400);
 
@@ -436,6 +493,7 @@ test("PUT schedule by id", async () => {
     };
     repB = await supertest(app)
       .put(`/schedule/put/1231564879846514`)
+      .set("Authorization", `Bearer ${token}`)
       .send(majScheduleB)
       .expect(400);
 
@@ -458,7 +516,16 @@ test("PUT schedule by id", async () => {
 
 test("DELETE a schedule by id", async () => {
   try {
-    // Test setup
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     const newSchedule = {
       name: "a schedule",
       startDate: "2022-06-22T10:00",
@@ -468,6 +535,7 @@ test("DELETE a schedule by id", async () => {
 
     let rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(200);
 
@@ -477,6 +545,7 @@ test("DELETE a schedule by id", async () => {
     // Try delete
     let repB = await supertest(app)
       .delete(`/schedule/delete/${rep.body.data.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .expect(200);
 
     let SCB = await Schedule.findById(SC.id);
@@ -491,7 +560,16 @@ test("DELETE a schedule by id", async () => {
 
 test("DELETE a schedule with wrong id", async () => {
   try {
-    // Test setup
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     const newSchedule = {
       name: "a schedule",
       startDate: "2022-06-22T10:00",
@@ -501,6 +579,7 @@ test("DELETE a schedule with wrong id", async () => {
 
     let rep = await supertest(app)
       .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
       .send(newSchedule)
       .expect(200);
 
@@ -510,6 +589,7 @@ test("DELETE a schedule with wrong id", async () => {
     // try delete with wrong id
     repB = await supertest(app)
       .delete(`/schedule/delete/${23123546854246}`)
+      .set("Authorization", `Bearer ${token}`)
       .expect(400);
 
     SCB = await Schedule.findById(SC.id);
@@ -517,6 +597,66 @@ test("DELETE a schedule with wrong id", async () => {
 
     expect(SCB).not.toBeNull();
     expect(WTB).not.toBeNull();
+  } catch (err) {
+    throw err;
+  }
+});
+
+test("ACCESS (POST/PUT/DELETE) schedule route without permission", async () => {
+  try {
+    // User is not authenticated
+    const newSchedule = {
+      name: "a schedule",
+      startDate: "2022-06-22T10:00",
+      endDate: "2022-06-22T17:00",
+      breakTime: 60,
+    };
+    // post
+    let rep = await supertest(app)
+      .post(`/schedule/add`)
+      .send(newSchedule)
+      .expect(401);
+
+    // put
+    rep = await supertest(app)
+      .put(`/schedule/put/23123546854246`)
+      .send(newSchedule)
+      .expect(401);
+
+    // Delete
+    repB = await supertest(app)
+      .delete(`/schedule/delete/23123546854246`)
+      .expect(401);
+
+    // User authenticated but without permission (not admin)
+    const user = await User.findOne({ role: "user" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
+    // post
+    rep = await supertest(app)
+      .post(`/schedule/add`)
+      .set("Authorization", `Bearer ${token}`)
+      .send(newSchedule)
+      .expect(401);
+
+    // put
+    rep = await supertest(app)
+      .put(`/schedule/put/23123546854246`)
+      .set("Authorization", `Bearer ${token}`)
+      .send(newSchedule)
+      .expect(401);
+
+    // Delete
+    repB = await supertest(app)
+      .delete(`/schedule/delete/23123546854246`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(401);
   } catch (err) {
     throw err;
   }
