@@ -8,11 +8,6 @@ const JWT = require("jwt-simple");
 const cfg = require("../config/auth.config");
 const User = require("../models/user.model");
 
-const params = {
-  secretOrKey: cfg.jwtSecret,
-  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken("jwt"),
-};
-
 // Define local authentication strategy (auth from a login page)
 passport.use(
   new LocalStrategy(function (username, password, done) {
@@ -46,6 +41,11 @@ passport.use(
 );
 
 // Define jwt authentication strategy (keep login alive)
+const params = {
+  secretOrKey: cfg.jwtSecret,
+  jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken("jwt"),
+};
+
 passport.use(
   new JWTStrategy(params, function (payload, done) {
     User.findById(payload.id, function (err, user) {

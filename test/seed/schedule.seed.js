@@ -25,6 +25,13 @@ let workTimeD = new WorkTime({
 });
 
 module.exports = {
+  User: [
+    {
+      username: "Zello",
+      password: "12345678",
+      role: "admin",
+    },
+  ],
   Schedule: [
     {
       name: "shedule A",

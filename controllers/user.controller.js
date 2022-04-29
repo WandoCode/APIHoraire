@@ -55,9 +55,11 @@ exports.post_user = async (req, res, next) => {
       calendar: {},
       role,
     };
-    await User.create(newUser);
+    let user = await User.create(newUser);
 
-    return res.status(201).send({ message: "User created", success: true });
+    return res
+      .status(201)
+      .send({ message: "User created", success: true, datas: { id: user.id } });
   } catch (err) {
     next(err);
   }
