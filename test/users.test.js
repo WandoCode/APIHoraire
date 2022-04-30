@@ -186,6 +186,16 @@ test("POST /users/add add doublon", async () => {
 /*==================*/
 test("PUT /users/update/:id Update a user's datas", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     // Create a new user
     let newUser = await User.create({
       username: "Test maj",
@@ -194,8 +204,10 @@ test("PUT /users/update/:id Update a user's datas", async () => {
 
     // Try to update this user
     const majUsername = "updated";
+
     let reponse = await supertest(app)
       .post(`/users/update/${newUser._id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         username: majUsername,
         password: "12345678",
@@ -204,7 +216,7 @@ test("PUT /users/update/:id Update a user's datas", async () => {
 
     // API made the change expected
     expect(reponse.body.success).toBeTruthy();
-
+    console.log(reponse.body);
     // Check if changes are in the DB
     let majUser = await User.findById(newUser._id);
     expect(majUser.username).toBe(majUsername);
@@ -218,6 +230,16 @@ test("PUT /users/update/:id Update a user's datas", async () => {
 
 test("PUT /users/update/:id Update a user with wrong id", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     // Create a new user
     let newUser = await User.create({
       username: "Test maj",
@@ -228,6 +250,7 @@ test("PUT /users/update/:id Update a user with wrong id", async () => {
     const majUsername = "updated";
     let reponse = await supertest(app)
       .post(`/users/update/625b1bf85ce58741b994c626`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         username: majUsername,
         password: "12345678",
@@ -250,6 +273,15 @@ test("PUT /users/update/:id Update a user with wrong id", async () => {
 
 test("PUT /users/update/:id Update a user with a username already in use", async () => {
   try {
+    /* test setup */
+    const user = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: user.username, password: user.password })
+      .expect(200);
+
+    let token = userLog.body.token;
     // Create a new user
     let newUser = await User.create({
       username: "Test maj",
@@ -260,6 +292,7 @@ test("PUT /users/update/:id Update a user with a username already in use", async
     const majUsername = "updated";
     let reponse = await supertest(app)
       .post(`/users/update/${newUser._id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         username: "Shion",
         password: "12345678",
@@ -283,11 +316,21 @@ test("PUT /users/update/:id Update a user with a username already in use", async
 /*==================*/
 test("DELETE /users/delete/:id Delete a user", async () => {
   try {
+    /* test setup */
+    const userAdmin = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: userAdmin.username, password: userAdmin.password })
+      .expect(200);
+
+    let token = userLog.body.token;
     // Take a user from db
     let user = await User.findOne();
     // Try to delete a user
     let reponse = await supertest(app)
       .delete(`/users/delete/${user.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ username: user.username, password: user.password })
       .expect(200);
 
@@ -304,11 +347,22 @@ test("DELETE /users/delete/:id Delete a user", async () => {
 
 test("DELETE /users/delete/:id Delete a user without being the user", async () => {
   try {
+    /* test setup */
+    const userAdmin = await User.findOne({ role: "admin" });
+
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: userAdmin.username, password: userAdmin.password })
+      .expect(200);
+
+    let token = userLog.body.token;
+
     // Take a user from db
     let user = await User.findOne();
     // Try to delete a user
     await supertest(app)
       .delete(`/users/delete/${user.id}`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ username: "patate", password: "la grosse patate" })
       .expect(401);
 

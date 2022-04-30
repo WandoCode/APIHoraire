@@ -23,6 +23,7 @@ module.exports = {
     {
       username: "Ridiculpo",
       password: "12345678aaa",
+      role: "admin",
     },
   ],
 };

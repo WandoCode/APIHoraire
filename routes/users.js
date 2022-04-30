@@ -5,12 +5,13 @@ const passport = require("passport");
 const userController = require("../controllers/user.controller");
 const val = require("../middleware/validation");
 const { findUser } = require("../middleware/helpers");
+const { userIs } = require("../middleware/perm");
 
 /* GET users listing. */
 router.get("/all", userController.get_all_users);
 
 /* GET a user from db with id */
-findUser, router.get("/get/:id", findUser, userController.get_user);
+router.get("/get/:id", findUser, userController.get_user);
 
 /* POST a new user. */
 router.post(
@@ -25,12 +26,14 @@ router.post(
  */
 router.post(
   "/update/:id",
+  passport.authenticate("jwt", { session: false }),
   val.new_user_validation,
   val.display_error,
   findUser,
   userController.update_user
 );
-
+//626d3cf7ac9937ea7a353ace
+//eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjYyNmQzY2Y3YWM5OTM3ZWE3YTM1M2FjZSIsImV4cGlyZSI6MTY1MTkzMTAyNzM4Nn0.mIJTtsYaGKX2tZGYLUqn7NunUMHQCd0Vg0rlLAmHDR4
 /**
  * DELETE user
  */

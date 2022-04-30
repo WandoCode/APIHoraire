@@ -1,6 +1,7 @@
 const User = require("../models/user.model");
 const Schedule = require("../models/schedule.model");
 
+// Find user with params's ID
 exports.findUser = async (req, res, next) => {
   try {
     //Find user with id
@@ -15,7 +16,7 @@ exports.findUser = async (req, res, next) => {
     }
 
     // send instance to next middleware
-    req.user = user;
+    req.userByID = user;
     next();
   } catch (err) {
     res.status(400).send({ message: "unknown error" });

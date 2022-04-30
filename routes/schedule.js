@@ -7,8 +7,6 @@ const { findSchedule } = require("../middleware/helpers");
 const { userIs } = require("../middleware/perm");
 const val = require("../middleware/validation");
 
-// TODO: test for 'userIs'
-
 /* GET schedule listing. */
 router.get("/all", scheduleController.get_all_schedule);
 

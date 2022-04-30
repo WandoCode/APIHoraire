@@ -25,7 +25,7 @@ exports.get_all_users = async (req, res, next) => {
 exports.get_user = async (req, res, next) => {
   try {
     // user loaded in findUser middleware (see routes)
-    let usersFound = req.user;
+    let usersFound = req.userByID;
     res
       .status(200)
       .send({ message: "User found", success: true, datas: usersFound });
@@ -73,7 +73,7 @@ exports.update_user = async (req, res, next) => {
   let { username, password } = req.body;
   try {
     // See middleware findUser
-    let userFound = req.user;
+    let userFound = req.userByID;
 
     // If Username change
     if (userFound.username !== username) {
@@ -107,7 +107,7 @@ exports.update_user = async (req, res, next) => {
 exports.delete_user = async (req, res, next) => {
   try {
     // See middleware findUser
-    let user = req.user;
+    let user = req.userByID;
 
     // Process request
     await User.findByIdAndRemove(user.id);
@@ -127,7 +127,7 @@ exports.post_day = async (req, res, next) => {
   let { scheduleId, date } = req.body;
   try {
     // user loaded in findUser middleware (see routes)
-    let user = req.user;
+    let user = req.userByID;
 
     // Create the calendar field
     let day = date.getDate().toString();
@@ -168,7 +168,7 @@ exports.delete_schedule = async (req, res, next) => {
   try {
     let { date } = req.body;
     // user loaded in findUser middleware (see routes)
-    let user = req.user;
+    let user = req.userByID;
 
     // Check if the year, month and day are already in user db
     let day = date.getDate().toString();
@@ -214,7 +214,7 @@ exports.post_workTime = async (req, res, next) => {
 
   try {
     // user loaded in findUser middleware (see routes)
-    let user = req.user;
+    let user = req.userByID;
 
     // Create the calendar field
     // Check if the year, month and day are already in user db
@@ -267,7 +267,7 @@ exports.delete_workTime = async (req, res, next) => {
   try {
     let { date } = req.body;
     // user loaded in findUser middleware (see routes)
-    let user = req.user;
+    let user = req.userByID;
 
     // Check if the year, month and day are already in user db
     let day = date.getDate().toString();
