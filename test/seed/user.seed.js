@@ -19,6 +19,7 @@ module.exports = {
     {
       username: "Plugos",
       password: "12345678z",
+      role: "user",
     },
     {
       username: "Ridiculpo",

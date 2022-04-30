@@ -29,17 +29,18 @@ router.post(
   passport.authenticate("jwt", { session: false }),
   val.new_user_validation,
   val.display_error,
+  userIs("self", "admin"),
   findUser,
   userController.update_user
 );
-//626d3cf7ac9937ea7a353ace
-//eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjYyNmQzY2Y3YWM5OTM3ZWE3YTM1M2FjZSIsImV4cGlyZSI6MTY1MTkzMTAyNzM4Nn0.mIJTtsYaGKX2tZGYLUqn7NunUMHQCd0Vg0rlLAmHDR4
+
 /**
  * DELETE user
  */
 router.delete(
   "/delete/:id",
-  passport.authenticate("local", { session: false }),
+  passport.authenticate("jwt", { session: false }),
+  userIs("admin", "self"),
   findUser,
   userController.delete_user
 );
@@ -49,8 +50,10 @@ router.delete(
  */
 router.post(
   "/:id/calendar/add/schedule",
+  passport.authenticate("jwt", { session: false }),
   val.new_schedule,
   val.display_error,
+  userIs("admin", "self"),
   findUser,
   userController.post_day
 );
@@ -60,8 +63,10 @@ router.post(
  */
 router.delete(
   "/:id/calendar/delete/schedule",
+  passport.authenticate("jwt", { session: false }),
   val.date,
   val.display_error,
+  userIs("admin", "self"),
   findUser,
   userController.delete_schedule
 );
@@ -71,8 +76,10 @@ router.delete(
  */
 router.post(
   "/:id/calendar/add/worktime",
+  passport.authenticate("jwt", { session: false }),
   val.workTime,
   val.display_error,
+  userIs("admin", "self"),
   findUser,
   userController.post_workTime
 );
@@ -82,8 +89,10 @@ router.post(
  */
 router.delete(
   "/:id/calendar/delete/worktime",
+  passport.authenticate("jwt", { session: false }),
   val.date,
   val.display_error,
+  userIs("admin", "self"),
   findUser,
   userController.delete_workTime
 );

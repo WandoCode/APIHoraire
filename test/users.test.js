@@ -13,6 +13,17 @@ const datasUser = require("../config/datas.json").models.users;
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
 setupDB(userSeed, "users", true);
 
+const logUser = async (filter) => {
+  const user = await User.findOne(filter);
+
+  let userLog = await supertest(app)
+    .post(`/login`)
+    .send({ username: user.username, password: user.password })
+    .expect(200);
+
+  return userLog.body.token;
+};
+
 /*     USER GET     */
 /*==================*/
 test("GET /users/all get all users", async () => {
@@ -186,15 +197,7 @@ test("POST /users/add add doublon", async () => {
 /*==================*/
 test("PUT /users/update/:id Update a user's datas", async () => {
   try {
-    /* test setup */
-    const user = await User.findOne({ role: "admin" });
-
-    let userLog = await supertest(app)
-      .post(`/login`)
-      .send({ username: user.username, password: user.password })
-      .expect(200);
-
-    let token = userLog.body.token;
+    let token = await logUser({ role: "admin" });
 
     // Create a new user
     let newUser = await User.create({
@@ -216,7 +219,7 @@ test("PUT /users/update/:id Update a user's datas", async () => {
 
     // API made the change expected
     expect(reponse.body.success).toBeTruthy();
-    console.log(reponse.body);
+
     // Check if changes are in the DB
     let majUser = await User.findById(newUser._id);
     expect(majUser.username).toBe(majUsername);
@@ -230,15 +233,7 @@ test("PUT /users/update/:id Update a user's datas", async () => {
 
 test("PUT /users/update/:id Update a user with wrong id", async () => {
   try {
-    /* test setup */
-    const user = await User.findOne({ role: "admin" });
-
-    let userLog = await supertest(app)
-      .post(`/login`)
-      .send({ username: user.username, password: user.password })
-      .expect(200);
-
-    let token = userLog.body.token;
+    let token = await logUser({ role: "admin" });
 
     // Create a new user
     let newUser = await User.create({
@@ -273,15 +268,7 @@ test("PUT /users/update/:id Update a user with wrong id", async () => {
 
 test("PUT /users/update/:id Update a user with a username already in use", async () => {
   try {
-    /* test setup */
-    const user = await User.findOne({ role: "admin" });
-
-    let userLog = await supertest(app)
-      .post(`/login`)
-      .send({ username: user.username, password: user.password })
-      .expect(200);
-
-    let token = userLog.body.token;
+    let token = await logUser({ role: "admin" });
     // Create a new user
     let newUser = await User.create({
       username: "Test maj",
@@ -316,15 +303,7 @@ test("PUT /users/update/:id Update a user with a username already in use", async
 /*==================*/
 test("DELETE /users/delete/:id Delete a user", async () => {
   try {
-    /* test setup */
-    const userAdmin = await User.findOne({ role: "admin" });
-
-    let userLog = await supertest(app)
-      .post(`/login`)
-      .send({ username: userAdmin.username, password: userAdmin.password })
-      .expect(200);
-
-    let token = userLog.body.token;
+    let token = await logUser({ role: "admin" });
     // Take a user from db
     let user = await User.findOne();
     // Try to delete a user
@@ -347,23 +326,14 @@ test("DELETE /users/delete/:id Delete a user", async () => {
 
 test("DELETE /users/delete/:id Delete a user without being the user", async () => {
   try {
-    /* test setup */
-    const userAdmin = await User.findOne({ role: "admin" });
-
-    let userLog = await supertest(app)
-      .post(`/login`)
-      .send({ username: userAdmin.username, password: userAdmin.password })
-      .expect(200);
-
-    let token = userLog.body.token;
+    let token = await logUser({ role: "user" });
 
     // Take a user from db
-    let user = await User.findOne();
+    let user = await User.findOne({ username: "Daddji" });
     // Try to delete a user
     await supertest(app)
       .delete(`/users/delete/${user.id}`)
       .set("Authorization", `Bearer ${token}`)
-      .send({ username: "patate", password: "la grosse patate" })
       .expect(401);
 
     // Check that user has not been deleted of the DB
@@ -379,6 +349,8 @@ test("DELETE /users/delete/:id Delete a user without being the user", async () =
 /*============================*/
 test("POST and PUT a schedule in user calendar", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
       endDate: new Date(2022, 3, 20, 12, 45),
@@ -393,6 +365,7 @@ test("POST and PUT a schedule in user calendar", async () => {
 
     const rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
@@ -411,6 +384,7 @@ test("POST and PUT a schedule in user calendar", async () => {
     });
     const repB = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleB.id, date: "2022-06-22" })
       .expect(200);
 
@@ -430,6 +404,8 @@ test("POST and PUT a schedule in user calendar", async () => {
 
 test("POST a schedule in user calendar with wrong datas", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
       endDate: new Date(2022, 3, 20, 12, 45),
@@ -445,6 +421,7 @@ test("POST a schedule in user calendar with wrong datas", async () => {
     // Wrong id
     const rep = await supertest(app)
       .post(`/users/6262ef89b6b72b18c716269d/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(400);
     expect(rep.body.success).toBeFalsy();
@@ -452,6 +429,7 @@ test("POST a schedule in user calendar with wrong datas", async () => {
     // wrong date format
     const repB = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22T20:00" })
       .expect(400);
     expect(repB.body.success).toBeFalsy();
@@ -460,6 +438,7 @@ test("POST a schedule in user calendar with wrong datas", async () => {
     // wrong date schemaId
     const repC = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: "6262ef89b6b72b18c71626", date: "2022-06-22" })
       .expect(400);
     expect(repC.body.success).toBeFalsy();
@@ -471,6 +450,8 @@ test("POST a schedule in user calendar with wrong datas", async () => {
 
 test("DELETE a schedule in user calendar", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
       endDate: new Date(2022, 3, 20, 12, 45),
@@ -486,6 +467,7 @@ test("DELETE a schedule in user calendar", async () => {
     // Create a schedule and put it in user calendar
     const rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
@@ -494,6 +476,7 @@ test("DELETE a schedule in user calendar", async () => {
     // Delete schedule
     await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22",
       })
@@ -514,6 +497,8 @@ test("DELETE a schedule in user calendar", async () => {
 
 test("DELETE a schedule in user calendar with wrong datas", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
       endDate: new Date(2022, 3, 20, 12, 45),
@@ -529,6 +514,7 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
     // Create a schedule and put it in user calendar
     let rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
@@ -537,6 +523,7 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
     // Try to delete with wrong id
     rep = await supertest(app)
       .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22",
       })
@@ -545,6 +532,7 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
     // Try to delete with wrong date format
     rep = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22T22:00",
       })
@@ -563,6 +551,7 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
     // Try to delete with wrong date format
     rep = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22T22:00",
       })
@@ -584,10 +573,13 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
 
 test("POST and PUT a worktime in user calendar", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let user = await User.findOne();
 
     const rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T10:00",
         endDate: "2022-06-22T17:00",
@@ -616,6 +608,7 @@ test("POST and PUT a worktime in user calendar", async () => {
     // Try to update Datas
     const repB = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T08:00",
         endDate: "2022-06-22T16:00",
@@ -643,11 +636,14 @@ test("POST and PUT a worktime in user calendar", async () => {
 
 test("POST and PUT a worktime in user calendar with wrong datas", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let user = await User.findOne();
 
     // Wrong start and end dates
     let rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22",
         endDate: "2022-06-22",
@@ -664,6 +660,7 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
     // Wrong breakTime
     rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T10:00",
         endDate: "2022-06-22T17:00",
@@ -680,6 +677,7 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
     // Wrong date
     rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T10:00",
         endDate: "2022-06-22T17:00",
@@ -696,6 +694,7 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
     // startDate <= endDate
     rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T18:00",
         endDate: "2022-06-22T17:00",
@@ -715,11 +714,14 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
 
 test("DELETE a worktime in user calendar", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let user = await User.findOne();
 
     // Create a worktime and put it in user calendar
     let rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T08:00",
         endDate: "2022-06-22T17:00",
@@ -731,6 +733,7 @@ test("DELETE a worktime in user calendar", async () => {
     // Delete worktime
     let repB = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22",
       })
@@ -751,11 +754,14 @@ test("DELETE a worktime in user calendar", async () => {
 
 test("DELETE a worktime in user calendar with wrong datas", async () => {
   try {
+    let token = await logUser({ role: "admin" });
+
     let user = await User.findOne();
 
     // Create a worktime and put it in user calendar
     let rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         startDate: "2022-06-22T08:00",
         endDate: "2022-06-22T17:00",
@@ -769,6 +775,7 @@ test("DELETE a worktime in user calendar with wrong datas", async () => {
     // Try to delete with wrong id
     rep = await supertest(app)
       .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22",
       })
@@ -777,6 +784,7 @@ test("DELETE a worktime in user calendar with wrong datas", async () => {
     // Try to delete with wrong date format
     rep = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22T22:00",
       })
@@ -793,6 +801,7 @@ test("DELETE a worktime in user calendar with wrong datas", async () => {
     // Try to delete with wrong date format
     rep = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
       .send({
         date: "2022-06-22T22:00",
       })
