@@ -13,7 +13,6 @@ const workTimeSchema = new Schema(
       default: datasWT.breakTime.default,
     },
   },
-  // Add automaticattly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
 );
 

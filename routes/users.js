@@ -21,9 +21,7 @@ router.post(
   userController.post_user
 );
 
-/**
- * PUT update user data
- */
+/* PUT update user data */
 router.post(
   "/update/:id",
   passport.authenticate("jwt", { session: false }),
@@ -34,9 +32,7 @@ router.post(
   userController.update_user
 );
 
-/**
- * DELETE user
- */
+/* DELETE user */
 router.delete(
   "/delete/:id",
   passport.authenticate("jwt", { session: false }),
@@ -45,9 +41,7 @@ router.delete(
   userController.delete_user
 );
 
-/**
- * Post or update a schedule (by id) in user calendar
- */
+/* Post or update a schedule (by id) in user calendar */
 router.post(
   "/:id/calendar/add/schedule",
   passport.authenticate("jwt", { session: false }),
@@ -58,9 +52,7 @@ router.post(
   userController.post_day
 );
 
-/**
- * Delete a schedule in user calendar
- */
+/* Delete a schedule in user calendar */
 router.delete(
   "/:id/calendar/delete/schedule",
   passport.authenticate("jwt", { session: false }),
@@ -71,9 +63,7 @@ router.delete(
   userController.delete_schedule
 );
 
-/**
- * Post or update a worktime (by id) in user calendar
- */
+/* Post or update a worktime (by id) in user calendar */
 router.post(
   "/:id/calendar/add/worktime",
   passport.authenticate("jwt", { session: false }),
@@ -84,9 +74,7 @@ router.post(
   userController.post_workTime
 );
 
-/**
- * Delete a workTime in user calendar
- */
+/* Delete a workTime in user calendar */
 router.delete(
   "/:id/calendar/delete/worktime",
   passport.authenticate("jwt", { session: false }),
@@ -97,4 +85,10 @@ router.delete(
   userController.delete_workTime
 );
 
+//TODO: Créer une route juste pour les operation direct sur WorkTime (get uniquement a priori)
+/* Get a workTime by id */
+router.get(
+    "/get/worktime/:worktimeId",
+    userController.get_worktime
+);
 module.exports = router;

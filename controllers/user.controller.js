@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 const WorkTime = require("../models/workTime.model");
 const Schedule = require("../models/schedule.model");
-const { objectIsInDB } = require("../heplers/function");
+const {objectIsInDB, createPathCal, parseDate} = require("../heplers/function");
 
 /* GET all users from db */
 exports.get_all_users = async (req, res, next) => {
@@ -24,7 +24,6 @@ exports.get_all_users = async (req, res, next) => {
 /* GET a user from db with id */
 exports.get_user = async (req, res, next) => {
   try {
-    // user loaded in findUser middleware (see routes)
     let usersFound = req.userByID;
     res
       .status(200)
@@ -33,21 +32,20 @@ exports.get_user = async (req, res, next) => {
     next(err);
   }
 };
+
 /* POST a new user */
 exports.post_user = async (req, res, next) => {
-  // Form validation is made with middleware in ./routes
   try {
     let { username, password, role = "user" } = req.body;
 
     // Check if username already exists in db
     let userIsInDB = await objectIsInDB({ username }, User);
     if (userIsInDB) {
-      // Username is already in db
       return res
         .status(400)
         .send({ message: "Username already exists", success: false });
     }
-    // Username is available
+
     // Make a new Calendar for the user
     let newUser = {
       username,
@@ -55,11 +53,12 @@ exports.post_user = async (req, res, next) => {
       calendar: {},
       role,
     };
+
     let user = await User.create(newUser);
 
     return res
       .status(201)
-      .send({ message: "User created", success: true, datas: { id: user.id } });
+      .send({ message: "User created", success: true, userId: user.id});
   } catch (err) {
     next(err);
   }
@@ -69,32 +68,27 @@ exports.post_user = async (req, res, next) => {
  * PUT update user data
  */
 exports.update_user = async (req, res, next) => {
-  // Form validation is made with middleware in ./routes
-  let { username, password } = req.body;
   try {
-    // See middleware findUser
+    let { username, password } = req.body;
+
     let userFound = req.userByID;
 
-    // If Username change
+    // If Username change, check if new username is already in db
     if (userFound.username !== username) {
-      // Check if new username is already in db
       let usernameIsInDB = await objectIsInDB({ username }, User);
-
-      // New username already exists
       if (usernameIsInDB) {
         return res
           .status(400)
           .send({ message: "Username already exists", success: false });
       }
     }
+
     // Process update
     userFound.username = username;
     userFound.password = password;
 
-    // Update db
     await userFound.save();
 
-    // Send success
     return res.status(201).send({ message: "User updated", success: true });
   } catch (err) {
     next(err);
@@ -106,7 +100,6 @@ exports.update_user = async (req, res, next) => {
  */
 exports.delete_user = async (req, res, next) => {
   try {
-    // See middleware findUser
     let user = req.userByID;
 
     // Process request
@@ -124,29 +117,13 @@ exports.delete_user = async (req, res, next) => {
  * Post or update a schedule (by id) in user calendar
  */
 exports.post_day = async (req, res, next) => {
-  let { scheduleId, date } = req.body;
   try {
-    // user loaded in findUser middleware (see routes)
+    let { scheduleId, date } = req.body;
     let user = req.userByID;
+    let { day, monthIndex, year } = parseDate(date);
 
-    // Create the calendar field
-    let day = date.getDate().toString();
-    let monthIndex = date.getMonth().toString();
-    let year = date.getFullYear().toString();
-
-    // Check if the year, month and day are already in user db
-    // Create path if necessary
-    if (!user.calendrier[year]) {
-      user.calendrier[year] = {};
-    }
-
-    if (!user.calendrier[year][monthIndex]) {
-      user.calendrier[year][monthIndex] = {};
-    }
-
-    if (!user.calendrier[year][monthIndex][day]) {
-      user.calendrier[year][monthIndex][day] = {};
-    }
+    // Create path in user calendar if necessary
+    createPathCal(user, { day, monthIndex, year });
 
     user.calendrier[year][monthIndex][day]["schedule"] = scheduleId;
     user.markModified("calendrier");
@@ -167,13 +144,8 @@ exports.post_day = async (req, res, next) => {
 exports.delete_schedule = async (req, res, next) => {
   try {
     let { date } = req.body;
-    // user loaded in findUser middleware (see routes)
     let user = req.userByID;
-
-    // Check if the year, month and day are already in user db
-    let day = date.getDate().toString();
-    let monthIndex = date.getMonth().toString();
-    let year = date.getFullYear().toString();
+    let { day, monthIndex, year } = parseDate(date);
 
     // Try to recover the schedule id instance in user.calendrier.year.month.day.schedule
     let scheduleToDel =
@@ -189,9 +161,6 @@ exports.delete_schedule = async (req, res, next) => {
       });
     }
 
-    // Remove schedule from db
-    await Schedule.findByIdAndRemove(scheduleToDel);
-
     // Remove from user calendar instance
     user.calendrier[year][monthIndex][day]["schedule"] = null;
     user.markModified("calendrier");
@@ -199,7 +168,7 @@ exports.delete_schedule = async (req, res, next) => {
 
     res.status(200).send({
       success: true,
-      message: "Schedule successfully deleted from the user calendar and DB",
+      message: "Schedule successfully deleted from the user calendar",
     });
   } catch (err) {
     next(err);
@@ -213,27 +182,14 @@ exports.post_workTime = async (req, res, next) => {
   let { startDate, endDate, breakTime, date } = req.body;
 
   try {
-    // user loaded in findUser middleware (see routes)
     let user = req.userByID;
+    let { day, monthIndex, year } = parseDate(date);
 
-    // Create the calendar field
-    // Check if the year, month and day are already in user db
-    let day = date.getDate().toString();
-    let monthIndex = date.getMonth().toString();
-    let year = date.getFullYear().toString();
+    // Create path in user calendar if necessary
+    createPathCal(user, { day, monthIndex, year });
 
-    // Create path if necessary
-    if (!user.calendrier[year]) user.calendrier[year] = {};
-
-    if (!user.calendrier[year][monthIndex])
-      user.calendrier[year][monthIndex] = {};
-
-    if (!user.calendrier[year][monthIndex][day])
-      user.calendrier[year][monthIndex][day] = {};
-
-    // Check if worktime already exist at that date
+    // If worktime already exist at that date, delete it from db
     if (user.calendrier[year][monthIndex][day]["workTime"]) {
-      // Delete that instance of worktime from DB
       WorkTime.findByIdAndRemove(
         user.calendrier[year][monthIndex][day]["workTime"]
       );
@@ -266,13 +222,8 @@ exports.post_workTime = async (req, res, next) => {
 exports.delete_workTime = async (req, res, next) => {
   try {
     let { date } = req.body;
-    // user loaded in findUser middleware (see routes)
     let user = req.userByID;
-
-    // Check if the year, month and day are already in user db
-    let day = date.getDate().toString();
-    let monthIndex = date.getMonth().toString();
-    let year = date.getFullYear().toString();
+    let { day, monthIndex, year } = parseDate(date);
 
     // Try to recover the workTime id instance in user.calendrier.year.month.day.workTime
     let workTimeToDel =
@@ -288,10 +239,8 @@ exports.delete_workTime = async (req, res, next) => {
       });
     }
 
-    // Remove workTime from db
+    // Remove workTime from db and user's calendar instance
     await WorkTime.findByIdAndRemove(workTimeToDel);
-
-    // Remove from user calendar instance
     user.calendrier[year][monthIndex][day]["workTime"] = null;
     user.markModified("calendrier");
     await user.save();
@@ -300,6 +249,25 @@ exports.delete_workTime = async (req, res, next) => {
       success: true,
       message: "Worktime successfully deleted from the user calendar and DB",
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.get_worktime = async (req, res, next) => {
+  try {
+    let {worktimeId} = req.params;
+    let workTimeFound = await WorkTime.findById(worktimeId);
+
+    if (!workTimeFound){
+      return res.status(400).send({
+        message: `WorkTime not found with the given id`,
+        success: false,
+      });
+    }
+    res
+        .status(200)
+        .send({ message: "workTime found", success: true, datas: workTimeFound });
   } catch (err) {
     next(err);
   }

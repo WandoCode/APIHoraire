@@ -4,10 +4,8 @@ const Schedule = require("../models/schedule.model");
 // Find user with params's ID
 exports.findUser = async (req, res, next) => {
   try {
-    //Find user with id
-    let user = await User.findById(req.params.id);
+    let user = await User.findById(req.params.id, '-password');
 
-    // No instance found
     if (!user) {
       return res.status(400).send({
         message: `User not found with the given id`,
@@ -15,7 +13,6 @@ exports.findUser = async (req, res, next) => {
       });
     }
 
-    // send instance to next middleware
     req.userByID = user;
     next();
   } catch (err) {
@@ -23,12 +20,11 @@ exports.findUser = async (req, res, next) => {
   }
 };
 
+// Find schedule with params's ID
 exports.findSchedule = async (req, res, next) => {
   try {
-    //Find schedule with id
     let schedule = await Schedule.findById(req.params.id);
 
-    // No instance found
     if (!schedule) {
       return res.status(400).send({
         message: `Schedule not found with the given id`,
@@ -36,7 +32,6 @@ exports.findSchedule = async (req, res, next) => {
       });
     }
 
-    // send instance to next middleware
     req.schedule = schedule;
     next();
   } catch (err) {

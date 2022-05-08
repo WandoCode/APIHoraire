@@ -10,35 +10,37 @@ const User = require("../models/user.model");
 
 // Define local authentication strategy (auth from a login page)
 passport.use(
-  new LocalStrategy(function (username, password, done) {
-    User.findOne({ username: username }, function (err, user) {
-      if (err) {
-        return done(err);
+  new LocalStrategy(async function (username, password, done) {
+    try{
+    let user = await User.findOne({ username: username });
+    if (!user) {
+      return done(null, false, {
+        message: "Incorrect username or password",
+        success: false,
+      });
+    }
+    if (!user.verifyPassword(password)) {
+      return done(null, false, {
+        message: "Incorrect username or password",
+        success: false,
+      });
+    }
+    //Success
+    // Create a token for the session
+    let payload = {
+      id: user.id,
+      expire: Date.now() + 1000 * 60 * 60 * 24 * 7, // 7days
+    };
+    let token = JWT.encode(payload, cfg.jwtSecret);
+    user.password = undefined
+    return done(null, {token, user});
       }
-      if (!user) {
-        return done(null, false, {
-          message: "Incorrect username or password",
-          success: false,
-        });
-      }
-      if (!user.verifyPassword(password)) {
-        return done(null, false, {
-          message: "Incorrect username or password",
-          success: false,
-        });
-      }
-      //Success
-      // Create a token for the session
-      let payload = {
-        id: user.id,
-        expire: Date.now() + 1000 * 60 * 60 * 24 * 7, // 7days
-      };
-      let token = JWT.encode(payload, cfg.jwtSecret);
 
-      return done(null, token);
-    });
-  })
-);
+        catch (err){
+  return done(err);
+    }
+  }
+))
 
 // Define jwt authentication strategy (keep login alive)
 const params = {

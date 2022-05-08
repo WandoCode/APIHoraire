@@ -13,7 +13,6 @@ const scheduleSchema = new Schema(
     },
     workTime: { type: mongoose.Schema.Types.ObjectId, ref: "WorkTime" },
   },
-  // Add automaticattly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
 );
 

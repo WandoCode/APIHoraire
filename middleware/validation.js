@@ -5,18 +5,15 @@ const datasWT = require("../config/datas.json").models.workTime;
 
 /* Middleware to display errors */
 exports.display_error = (req, res, next) => {
-  // Retreives errors from validation
   const errors = validationResult(req) || [];
 
-  // Return errors found during validation
   if (!errors.isEmpty()) {
-    return res.status(400).send(errors);
+    return res.status(400).send({validationErrors: errors});
   }
+
   return next();
 };
 
-/* VALIDATION CHAIN */
-// New user form validation
 exports.new_user_validation = [
   body("username")
     .trim()
@@ -40,14 +37,15 @@ exports.new_user_validation = [
 exports.login = [
   body("username")
     .trim()
-    .isAlphanumeric()
+    .isAlphanumeric().withMessage("Use alphanumeric characters")
     .isLength({
       min: datasUser.username.minlength,
       max: datasUser.username.maxlength,
-    })
+    }).withMessage(`Username have to be ${datasUser.username.minlength} - ${datasUser.username.maxlength} length`)
     .not()
-    .isEmpty(),
-  body("password").trim().not().isEmpty(),
+    .isEmpty()
+    .withMessage("Username field is empty"),
+  body("password").trim().not().isEmpty().withMessage("password field is empty"),
 ];
 
 exports.schedule = [

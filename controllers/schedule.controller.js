@@ -15,11 +15,15 @@ exports.get_all_schedule = async (req, res, next) => {
       });
     }
 
+
+
     res.status(200).send({
       message: "Schedules found",
       success: true,
-      datas: scheduleFound,
+      datas: scheduleFound
     });
+
+
   } catch (err) {
     next(err);
   }
@@ -28,13 +32,29 @@ exports.get_all_schedule = async (req, res, next) => {
 /* GET a schedule by id. */
 exports.get_schedule = async (req, res, next) => {
   try {
-    // Via middleware findSchedule
     let scheduleFound = req.schedule;
+
+    let workTime = await WorkTime.findById(scheduleFound.workTime);
+
+    if (workTime.length === 0) {
+      res.status(400).send({
+        message: "No workTime found in db",
+        success: false,
+        data: workTime,
+      });
+    }
 
     res.status(200).send({
       message: "Schedules found",
       success: true,
-      datas: scheduleFound,
+      datas: {
+        _id:scheduleFound._id,
+        workTime:scheduleFound.workTime,
+        name: scheduleFound.name,
+        startDate: workTime.startDate,
+        endDate: workTime.endDate,
+        breakTime: workTime.breakTime,
+      },
     });
   } catch (err) {
     next(err);
@@ -49,21 +69,19 @@ exports.post_schedule = async (req, res, next) => {
     // "name" must be unique
     let nameExists = await objectIsInDB({ name }, Schedule);
     if (nameExists) {
-      // name is already in db
       return res
         .status(400)
         .send({ message: "Name already exists", success: false });
     }
 
-    // Create a new workTime instance
+    // Create a new schedule instance
     let worktime = await WorkTime.create({
       startDate,
       endDate,
       breakTime,
     });
-
-    // Create a schedule instance
     let schedule = await Schedule.create({ name, workTime: worktime.id });
+
     res.status(200).send({
       message: "Schedule added",
       success: true,
@@ -74,9 +92,7 @@ exports.post_schedule = async (req, res, next) => {
   }
 };
 
-/**
- * PUT update schedule data
- */
+/* PUT update schedule data */
 exports.put_schedule = async (req, res, next) => {
   try {
     let { name, startDate, endDate, breakTime } = req.body;
@@ -86,7 +102,6 @@ exports.put_schedule = async (req, res, next) => {
     if (oldSchedule.name !== name) {
       let nameExists = await objectIsInDB({ name }, Schedule);
       if (nameExists) {
-        // name is already in db
         return res
           .status(400)
           .send({ message: "Name already exists", success: false });
@@ -121,24 +136,20 @@ exports.put_schedule = async (req, res, next) => {
   }
 };
 
-/**
- * DELETE a schedule
- */
+/* DELETE a schedule */
 exports.delete_schedule = async (req, res, next) => {
   try {
-    // Via middleware findSchedule
     let scheduleFound = req.schedule;
 
-    // Delete associated woktime
+    // Delete schedule instance and associated worktime
     await WorkTime.findByIdAndRemove(scheduleFound.workTime);
-
-    // Delete schedule instance
     await Schedule.findByIdAndRemove(scheduleFound.id);
 
     res.status(200).send({
       message: "Schedules deleted",
       success: true,
     });
+
   } catch (err) {
     next(err);
   }

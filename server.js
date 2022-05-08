@@ -8,14 +8,19 @@ const passport = require("passport");
 const cors = require("cors");
 const app = express();
 
-/* Set up a connexion with MongoDB */
-if (process.env.NODE_ENV !== "test") require("./config/db.config");
-
 // Start common middleware
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+/*=================================================*/
+/*                MongoDB connection               */
+/*-------------------------------------------------*/
+
+if (process.env.NODE_ENV !== "test") require("./config/db.config");
+
+/***************************************************/
 
 /*=================================================*/
 /*                  Configure CORS                 */
@@ -55,7 +60,7 @@ app.use(function (req, res, next) {
   next(createError(404));
 });
 
-// Send errors (utile? En prod c'est peut etre utile de juste d'envoyer 'internal error')
+// Send errors
 app.use(function (err, req, res, next) {
   // send error datas
   res.status(err.status || 500);

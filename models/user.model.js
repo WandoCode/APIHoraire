@@ -16,7 +16,6 @@ const userSchema = new Schema(
       type: String,
       required: datasUser.password.required,
     },
-    // Shedule can be added only by id
     calendrier: {
       type: {},
       default: {},
@@ -28,25 +27,22 @@ const userSchema = new Schema(
       default: datasUser.role.default,
     },
   },
-  // Add automaticatly a field 'CreatedAt' and 'updatedAt' in mongoDB
   { timestamps: true }
 );
 
 userSchema.pre("save", async function (next) {
-  //Middlware qui est lancer quand on insert un item à la db via 'create' (pas avec 'insertMany')
-  //par exemple pour hash un mdp d'un nouvel utilisateur.
+  /*Middlware qui est lancer quand on insert un item à la db via 'create' (pas avec 'insertMany')
+  par exemple pour hash un mdp d'un nouvel utilisateur.*/
   if (!this.isModified("password")) return next();
   const salt = bcrypt.genSaltSync(10);
   const hashedPassword = bcrypt.hashSync(this.password, salt);
   this.password = hashedPassword;
 });
 
-userSchema.method("verifyPassword", async function (passToCheck) {
-  // Return true if passToCheck is the good password
-  return await bcrypt.compare(passToCheck, this.password);
+userSchema.method("verifyPassword", async function (password) {
+  // Return true if password is the good password
+  return await bcrypt.compare(password, this.password);
 });
-
-// il y a d'autre type de middleware de ce genre 'remove' par exemple.
 
 const userModel = mongoose.model("User", userSchema);
 

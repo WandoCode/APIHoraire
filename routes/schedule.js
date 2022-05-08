@@ -23,9 +23,7 @@ router.post(
   scheduleController.post_schedule
 );
 
-/**
- * PUT update schedule data
- */
+/* PUT update schedule data */
 router.put(
   "/put/:id",
   passport.authenticate("jwt", { session: false }),
@@ -36,9 +34,7 @@ router.put(
   scheduleController.put_schedule
 );
 
-/**
- * DELETE a schedule
- */
+/* DELETE a schedule */
 router.delete(
   "/delete/:id",
   passport.authenticate("jwt", { session: false }),

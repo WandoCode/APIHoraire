@@ -482,10 +482,6 @@ test("DELETE a schedule in user calendar", async () => {
       })
       .expect(200);
 
-    // Test schedule is not in db anymore
-    let schedule = await Schedule.findById(scheduleA.id);
-    expect(schedule).toBeNull();
-
     // Test that worktime is not anymore in the user calendar
     let userTest = await User.findById(user.id);
     expect(userTest).toBeDefined();
@@ -563,9 +559,6 @@ test("DELETE a schedule in user calendar with wrong datas", async () => {
     expect(userTest.calendrier["2022"]["5"]["22"]["schedule"]).toBe(
       scheduleA.id
     );
-    //Test that WT instance still exists
-    SC = await Schedule.findById(scheduleA.id);
-    expect(SC).toBeDefined();
   } catch (err) {
     throw err;
   }

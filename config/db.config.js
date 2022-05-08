@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 /*              Start mongoDB connection           */
 /*-------------------------------------------------*/
 const mongoDb = process.env.DB_LINK.replace("<DBNAME>", "Main");
-mongoose.connect(mongoDb);
+mongoose.connect(mongoDb)
 
 const db = mongoose.connection;
 
