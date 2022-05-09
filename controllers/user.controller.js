@@ -1,6 +1,5 @@
 const User = require("../models/user.model");
 const WorkTime = require("../models/workTime.model");
-const Schedule = require("../models/schedule.model");
 const {objectIsInDB, createPathCal, parseDate} = require("../heplers/function");
 
 /* GET all users from db */
@@ -15,7 +14,7 @@ exports.get_all_users = async (req, res, next) => {
 
     res
       .status(200)
-      .send({ message: "Users found", success: true, datas: usersFound });
+      .send({ message: "Users found", success: true, data: usersFound });
   } catch (err) {
     next(err);
   }
@@ -27,7 +26,7 @@ exports.get_user = async (req, res, next) => {
     let usersFound = req.userByID;
     res
       .status(200)
-      .send({ message: "User found", success: true, datas: usersFound });
+      .send({ message: "User found", success: true, data: usersFound });
   } catch (err) {
     next(err);
   }
@@ -43,7 +42,7 @@ exports.post_user = async (req, res, next) => {
     if (userIsInDB) {
       return res
         .status(400)
-        .send({ message: "Username already exists", success: false });
+        .send({message: "Username already exists", success: false });
     }
 
     // Make a new Calendar for the user
@@ -267,7 +266,7 @@ exports.get_worktime = async (req, res, next) => {
     }
     res
         .status(200)
-        .send({ message: "workTime found", success: true, datas: workTimeFound });
+        .send({ message: "workTime found", success: true, data: workTimeFound });
   } catch (err) {
     next(err);
   }

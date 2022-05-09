@@ -16,7 +16,7 @@ exports.findUser = async (req, res, next) => {
     req.userByID = user;
     next();
   } catch (err) {
-    res.status(400).send({ message: "unknown error" });
+    res.status(400).send({ message: "unknown error", success:false });
   }
 };
 
@@ -35,6 +35,6 @@ exports.findSchedule = async (req, res, next) => {
     req.schedule = schedule;
     next();
   } catch (err) {
-    res.status(400).send({ message: "unknown error" });
+    res.status(400).send({ message: "unknown error", success:false });
   }
 };

@@ -20,7 +20,7 @@ exports.get_all_schedule = async (req, res, next) => {
     res.status(200).send({
       message: "Schedules found",
       success: true,
-      datas: scheduleFound
+      data: scheduleFound
     });
 
 
@@ -47,7 +47,7 @@ exports.get_schedule = async (req, res, next) => {
     res.status(200).send({
       message: "Schedules found",
       success: true,
-      datas: {
+      data: {
         _id:scheduleFound._id,
         workTime:scheduleFound.workTime,
         name: scheduleFound.name,

@@ -19,7 +19,8 @@ passport.use(
         success: false,
       });
     }
-    if (!user.verifyPassword(password)) {
+    let passwordIsGood = await user.verifyPassword(password)
+    if (!passwordIsGood) {
       return done(null, false, {
         message: "Incorrect username or password",
         success: false,
@@ -35,7 +36,6 @@ passport.use(
     user.password = undefined
     return done(null, {token, user});
       }
-
         catch (err){
   return done(err);
     }
@@ -55,7 +55,8 @@ passport.use(
         return done(new Error("UserNotFound"), null);
       } else if (payload.expire <= Date.now()) {
         return done(new Error("TokenExpired"), null);
-      } else {
+      } else if(!user.verifyPassword(password)) {
+
         return done(null, user);
       }
     });
