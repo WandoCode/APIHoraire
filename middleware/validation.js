@@ -8,7 +8,7 @@ exports.display_error = (req, res, next) => {
   const errors = validationResult(req) || [];
 
   if (!errors.isEmpty()) {
-    return res.status(400).send({validationErrors: errors});
+    return res.status(400).send({ validationErrors: errors });
   }
 
   return next();
@@ -17,7 +17,6 @@ exports.display_error = (req, res, next) => {
 exports.new_user_validation = [
   body("username")
     .trim()
-    .isAlphanumeric()
     .isLength({
       min: datasUser.username.minlength,
       max: datasUser.username.maxlength,
@@ -37,18 +36,27 @@ exports.new_user_validation = [
 exports.login = [
   body("username")
     .trim()
-    .isAlphanumeric().withMessage("Use alphanumeric characters")
+    .isAlphanumeric()
+    .withMessage("Use alphanumeric characters")
     .isLength({
       min: datasUser.username.minlength,
       max: datasUser.username.maxlength,
-    }).withMessage(`Username have to be ${datasUser.username.minlength} - ${datasUser.username.maxlength} length`)
+    })
+    .withMessage(
+      `Username have to be ${datasUser.username.minlength} - ${datasUser.username.maxlength} length`
+    )
     .not()
     .isEmpty()
     .withMessage("Username field is empty"),
-  body("password").trim().isLength({
-    min: datasUser.password.minlength,
-    max: datasUser.password.maxlength,
-  }).not().isEmpty().withMessage("password field is empty"),
+  body("password")
+    .trim()
+    .isLength({
+      min: datasUser.password.minlength,
+      max: datasUser.password.maxlength,
+    })
+    .not()
+    .isEmpty()
+    .withMessage("password field is empty"),
 ];
 
 exports.schedule = [

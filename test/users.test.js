@@ -13,87 +13,126 @@ const datasUser = require("../config/datas.json").models.users;
 // Open a db with the given name, manage db's datas during and after testing. Add seed if needed.
 setupDB(userSeed, "users", true);
 
-const logUser = async (filter) => {
-  const user = await User.findOne(filter);
+const logUser = async (role) => {
+  try {
+    const userDatas = {
+      username: "UserToLog",
+      password: "Lorem Ipsum bla",
+      role: role,
+    };
+    await User.create(userDatas);
 
-  let userLog = await supertest(app)
-    .post(`/login`)
-    .send({ username: user.username, password: user.password })
-    .expect(200);
+    let userLog = await supertest(app)
+      .post(`/login`)
+      .send({ username: userDatas.username, password: userDatas.password })
+      .expect(200);
 
-  return userLog.body.token;
+    return userLog.body.token;
+  } catch (err) {
+    throw err;
+  }
 };
 
 /*     USER GET     */
 /*==================*/
-test("GET /users/all get all users", async () => {
+test("GET users/all", async () => {
   try {
-    let reponse = await supertest(app).get("/users/all").expect(200);
-    expect(Array.isArray(reponse.body.datas)).toBeTruthy();
-    expect(reponse.body.datas.length).toBe(userSeed.User.length);
-  } catch (err) {
-    throw err;
-  }
-});
+    // DB have users
+    let rep = await supertest(app).get("/users/all").expect(200);
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeDefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
+    expect(Array.isArray(rep.body.data)).toBeTruthy();
+    expect(rep.body.data.length).toBe(userSeed.User.length);
 
-test("GET /users/all get all users when db is empty", async () => {
-  try {
+    /* No users in DB */
     // Empties user collection in db before test
     await User.deleteMany();
 
-    let reponse = await supertest(app).get("/users/all").expect(400);
-    expect(Array.isArray(reponse.body.success)).toBeFalsy();
-    expect(reponse.body.datas).toBeUndefined();
+    let repB = await supertest(app).get("/users/all").expect(200);
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeUndefined();
+    expect(repB.body.success).toBeDefined();
+    expect(repB.body.success).toBeFalsy();
   } catch (err) {
     throw err;
   }
 });
 
-test("GET /users/get/:id get a user with the given id", async () => {
+test("GET /users/get/:id", async () => {
   try {
-    // Test a user creation
-    let newUser = await User.create({
-      username: "user test",
-      password: "un mdp",
-    });
+    /* CASE 1 */
+    let user = await User.findOne();
 
-    let reponse = await supertest(app)
-      .get(`/users/get/${newUser._id}`)
-      .expect(200);
+    let rep = await supertest(app).get(`/users/get/${user._id}`).expect(200);
 
-    // Request success from API
-    expect(reponse.body.success).toBeTruthy();
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeDefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
 
-    // Datas sent by API are correct
-    expect(reponse.body.datas).toBeDefined();
-    expect(reponse.body.datas.username).toBe(newUser.username);
-    expect(reponse.body.datas._id).toBe(newUser.id);
-    expect(reponse.body.datas.password).toBe(newUser.password);
-    expect(reponse.body.datas.role).toBe("user");
-  } catch (err) {
-    throw err;
-  }
-});
+    // Check datas coming from API
+    expect(rep.body.data.username).toBe(user.username);
+    expect(rep.body.data._id).toBe(user.id);
+    expect(rep.body.data.role).toBe(user.role);
 
-test("GET /users/get/:id where no result is found", async () => {
-  try {
-    let reponse = await supertest(app)
+    // Password should not be sent to client
+    expect(rep.body.data.password).toBeUndefined();
+
+    /* Case 2: no result found  */
+    let repB = await supertest(app)
       // The id have the correct format
       .get(`/users/get/625b1bf85ce58741b994c683`)
       .expect(400);
 
-    // The results is not the one expected
-    expect(reponse.body.success).toBeFalsy();
-
-    // No datas has been sent
-    expect(reponse.body.datas).toBeUndefined();
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeUndefined();
+    expect(repB.body.success).toBeDefined();
+    expect(repB.body.success).toBeFalsy();
   } catch (err) {
     throw err;
   }
 });
 
-test("POST/DELETE/PUT test new_user validation of datas", async () => {
+test("POST users/add", async () => {
   try {
+    let userDatas = {
+      username: "User test",
+      password: "Pass user test",
+    };
+    /* Case 1 */
+    let rep = await supertest(app)
+      .post("/users/add")
+      .send(userDatas)
+      .expect(201);
+
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeDefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
+
+    // Check datas in DB are linked to datas returned by API
+    let checkRep = await User.findById(rep.body.data.id);
+    expect(checkRep).toBeDefined();
+    expect(checkRep.id).toBe(rep.body.data.id);
+    expect(checkRep.username).toBe(userDatas.username);
+    expect(checkRep.role).toBe("user");
+
+    /* Case 2:  try to use same username more than once */
+    let repB = await supertest(app)
+      .post("/users/add")
+      .send(userDatas)
+      .expect(400);
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeUndefined();
+    expect(repB.body.success).toBeDefined();
+    expect(repB.body.success).toBeFalsy();
+
+    let checkRepB = await User.find({ username: userDatas.username }).count();
+    expect(checkRepB).toBe(1);
+
+    /* Case 3: Error during input validation (Same validation to update Users) */
     // No username
     let userTest1 = {
       username: genStringWithLength(0),
@@ -148,68 +187,19 @@ test("POST/DELETE/PUT test new_user validation of datas", async () => {
   }
 });
 
-/*     USER POST    */
-/*==================*/
-test("POST /users/add post new user in db", async () => {
+test("PUT users/update/:id", async () => {
   try {
-    let userTest = {
-      username: "Test1",
-      password: "1234 56789",
-    };
+    /* Input validation : see POST add new user's case */
 
-    let reponse = await supertest(app)
-      .post("/users/add")
-      .send(userTest)
-      .expect(201);
+    /* Test setup */
+    let token = await logUser("admin");
 
-    /// User has been created by API
-    expect(reponse.body.success).toBeTruthy();
-    expect(reponse.body.message).toBe("User created");
-
-    let userFound = await User.findOne({ username: userTest.username });
-
-    // User is in DB
-    expect(userFound).not.toBeNull();
-    expect(userFound.username).toBe(userTest.username);
-  } catch (err) {
-    throw err;
-  }
-});
-
-test("POST /users/add add doublon", async () => {
-  try {
-    let reponse = await supertest(app)
-      .post("/users/add")
-      .send({
-        username: "Shion",
-        password: "Lorem ipsum",
-      })
-      .expect(400);
-
-    // The results is not the one expected (user not created)
-    expect(reponse.body.success).toBeFalsy();
-  } catch (err) {
-    throw err;
-  }
-});
-
-/*     USER PUT     */
-/*==================*/
-test("PUT /users/update/:id Update a user's datas", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-
-    // Create a new user
-    let newUser = await User.create({
-      username: "Test maj",
-      password: "azeazeaz",
-    });
-
-    // Try to update this user
+    /* Case 1 */
+    let userToUpdate = await User.findOne({ role: "user" });
     const majUsername = "updated";
 
-    let reponse = await supertest(app)
-      .post(`/users/update/${newUser._id}`)
+    let rep = await supertest(app)
+      .post(`/users/update/${userToUpdate._id}`)
       .set("Authorization", `Bearer ${token}`)
       .send({
         username: majUsername,
@@ -217,91 +207,68 @@ test("PUT /users/update/:id Update a user's datas", async () => {
       })
       .expect(201);
 
-    // API made the change expected
-    expect(reponse.body.success).toBeTruthy();
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeUndefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
 
     // Check if changes are in the DB
-    let majUser = await User.findById(newUser._id);
+    let majUser = await User.findById(userToUpdate._id);
     expect(majUser.username).toBe(majUsername);
 
     //Password has been hashed. Check if current one is different than the initial one
-    expect(majUser.password).not.toBe(newUser.password);
-  } catch (err) {
-    throw err;
-  }
-});
+    expect(majUser.password).not.toBe(userToUpdate.password);
 
-test("PUT /users/update/:id Update a user with wrong id", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-
-    // Create a new user
-    let newUser = await User.create({
-      username: "Test maj",
-      password: "azeazeze",
-    });
-
-    // Try to update this user
-    const majUsername = "updated";
-    let reponse = await supertest(app)
+    /* Case 2: wrong id */
+    let repB = await supertest(app)
       .post(`/users/update/625b1bf85ce58741b994c626`)
       .set("Authorization", `Bearer ${token}`)
       .send({
-        username: majUsername,
-        password: "12345678",
+        username: "Something else",
+        password: "12345678b",
       })
       .expect(400);
 
-    // API has not made the change expected
-    expect(reponse.body.success).toBeFalsy();
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeUndefined();
+    expect(repB.body.success).toBeDefined();
+    expect(repB.body.success).toBeFalsy();
 
-    // Check that changes are not in the DB
-    let majUser = await User.findById(newUser._id);
-    expect(majUser.username).not.toBe(majUsername);
+    // Check db has not changed
+    let majUserB = await User.findById(majUser._id);
+    expect(majUserB.username).toBe(majUsername);
 
     //Password has been hashed. Check if current one is the same than the initial one
-    expect(majUser.password).toBe(newUser.password);
-  } catch (err) {
-    throw err;
-  }
-});
+    expect(majUserB.password).toBe(majUser.password);
 
-test("PUT /users/update/:id Update a user with a username already in use", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-    // Create a new user
-    let newUser = await User.create({
-      username: "Test maj",
-      password: "azeazeze",
-    });
-
-    // Try to update this user
-    const majUsername = "updated";
-    let reponse = await supertest(app)
-      .post(`/users/update/${newUser._id}`)
+    /* Case 3 : username is already used */
+    let repC = await supertest(app)
+      .post(`/users/update/${userToUpdate._id}`)
       .set("Authorization", `Bearer ${token}`)
       .send({
         username: "Shion",
-        password: "12345678",
+        password: "12345678x",
       })
       .expect(400);
 
-    // API has not made the change expected
-    expect(reponse.body.success).toBeFalsy();
+    expect(repC.body.message).toBeDefined();
+    expect(repC.body.data).toBeUndefined();
+    expect(repC.body.success).toBeDefined();
+    expect(repC.body.success).toBeFalsy();
 
-    // Check that changes are not in the DB
-    let majUser = await User.findById(newUser._id);
-    expect(majUser.username).not.toBe(majUsername);
+    // Check db has not changed
+    let majUserC = await User.findById(majUser._id);
+    expect(majUserC.username).toBe(majUsername);
 
     //Password has been hashed. Check if current one is the same than the initial one
-    expect(majUser.password).toBe(newUser.password);
+    expect(majUserC.password).toBe(majUser.password);
   } catch (err) {
     throw err;
   }
 });
-/*    USER DELETE   */
-/*==================*/
-test("DELETE /users/delete/:id Delete a user", async () => {
+
+// TODO: continuer à re-écrire les test à partir d'ici
+test.only("DELETE /users/delete/:id Delete a user", async () => {
   try {
     let token = await logUser({ role: "admin" });
     // Take a user from db

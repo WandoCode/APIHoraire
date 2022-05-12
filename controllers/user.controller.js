@@ -6,10 +6,8 @@ const {objectIsInDB, createPathCal, parseDate} = require("../heplers/function");
 exports.get_all_users = async (req, res, next) => {
   try {
     let usersFound = await User.find();
-
     if (usersFound.length === 0) {
-      // TODO change HTML status code
-      res.status(400).send({ message: "No users found in db", success: false });
+      res.status(200).send({ message: "No users found in db", success: false });
     }
 
     res
@@ -57,7 +55,7 @@ exports.post_user = async (req, res, next) => {
 
     return res
       .status(201)
-      .send({ message: "User created", success: true, userId: user.id});
+      .send({ message: "User created", success: true, data: {id:user.id}});
   } catch (err) {
     next(err);
   }
