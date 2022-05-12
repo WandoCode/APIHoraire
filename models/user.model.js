@@ -31,7 +31,7 @@ const userSchema = new Schema(
 );
 
 userSchema.pre("save", async function (next) {
-  /*Middlware qui est lancer quand on insert un item à la db via 'create' (pas avec 'insertMany')
+  /*Middleware qui est lancer quand on insert un item à la db via 'create' (pas avec 'insertMany')
   par exemple pour hash un mdp d'un nouvel utilisateur.*/
   if (!this.isModified("password")) return next();
   const salt = bcrypt.genSaltSync(10);

@@ -55,8 +55,7 @@ passport.use(
         return done(new Error("UserNotFound"), null);
       } else if (payload.expire <= Date.now()) {
         return done(new Error("TokenExpired"), null);
-      } else if(!user.verifyPassword(password)) {
-
+      } else{
         return done(null, user);
       }
     });

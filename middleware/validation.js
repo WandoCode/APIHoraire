@@ -45,7 +45,10 @@ exports.login = [
     .not()
     .isEmpty()
     .withMessage("Username field is empty"),
-  body("password").trim().not().isEmpty().withMessage("password field is empty"),
+  body("password").trim().isLength({
+    min: datasUser.password.minlength,
+    max: datasUser.password.maxlength,
+  }).not().isEmpty().withMessage("password field is empty"),
 ];
 
 exports.schedule = [
