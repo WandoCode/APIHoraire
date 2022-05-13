@@ -81,6 +81,7 @@ exports.new_schedule = [
   body("scheduleId").isMongoId().not().isEmpty(),
   body("date").isDate().not().isEmpty().toDate(),
 ];
+
 // isISO8601() allows "yyyy-mm-ddThh:mm", isDate() allow only "yyyy-mm-dd"
 exports.workTime = [
   // I want time here

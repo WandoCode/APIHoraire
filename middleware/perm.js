@@ -14,7 +14,10 @@ exports.userIs = (...args) => {
     const roles = printsAuthRoles(args);
     return res
       .status(401)
-      .send({message: `Unauthorized access. User role has to be ${roles}`});
+      .send({
+        message: `Unauthorized access. User role has to be ${roles}`,
+        success: false,
+      });
   };
 };
 
@@ -27,5 +30,5 @@ const printsAuthRoles = (roles) => {
     const role = roles[i];
     rolesString += role + " or ";
   }
-  return (rolesString.slice(0, -3));
+  return rolesString.slice(0, -3);
 };

@@ -85,10 +85,8 @@ router.delete(
   userController.delete_workTime
 );
 
-//TODO: Créer une route juste pour les operation direct sur WorkTime (get uniquement a priori)
+//TODO: Créer une route juste pour les operations directes sur WorkTime (get uniquement a priori)
 /* Get a workTime by id */
-router.get(
-    "/get/worktime/:worktimeId",
-    userController.get_worktime
-);
+router.get("/get/worktime/:worktimeId", userController.get_worktime);
+
 module.exports = router;

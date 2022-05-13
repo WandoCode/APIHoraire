@@ -16,8 +16,8 @@ setupDB(userSeed, "users", true);
 const logUser = async (role) => {
   try {
     const userDatas = {
-      username: "UserToLog",
-      password: "Lorem Ipsum bla",
+      username: "USerToLog",
+      password: "Lorem ipsum1",
       role: role,
     };
     await User.create(userDatas);
@@ -267,23 +267,24 @@ test("PUT users/update/:id", async () => {
   }
 });
 
-// TODO: continuer à re-écrire les test à partir d'ici
-test.only("DELETE /users/delete/:id Delete a user", async () => {
+test("DELETE /users/delete/:id", async () => {
   try {
-    let token = await logUser({ role: "admin" });
-    // Take a user from db
+    let token = await logUser("admin");
+
+    /* Case 1 */
     let user = await User.findOne();
-    // Try to delete a user
-    let reponse = await supertest(app)
+    let rep = await supertest(app)
       .delete(`/users/delete/${user.id}`)
       .set("Authorization", `Bearer ${token}`)
       .send({ username: user.username, password: user.password })
       .expect(200);
 
-    // API made the change expected
-    expect(reponse.body.success).toBeTruthy();
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeUndefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
 
-    // Check if user has been deleted of the DB
+    // Check DB
     let delUser = await User.findById(user._id);
     expect(delUser).toBeNull();
   } catch (err) {
@@ -291,19 +292,23 @@ test.only("DELETE /users/delete/:id Delete a user", async () => {
   }
 });
 
-test("DELETE /users/delete/:id Delete a user without being the user", async () => {
+test("DELETE /users/delete/:id", async () => {
   try {
-    let token = await logUser({ role: "user" });
+    let token = await logUser("user");
 
-    // Take a user from db
-    let user = await User.findOne({ username: "Daddji" });
-    // Try to delete a user
-    await supertest(app)
+    /* Case 2: Delete asked from unauthorized user */
+    let user = await User.findOne();
+    let rep = await supertest(app)
       .delete(`/users/delete/${user.id}`)
       .set("Authorization", `Bearer ${token}`)
       .expect(401);
 
-    // Check that user has not been deleted of the DB
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeUndefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeFalsy();
+
+    // Check DB
     let delUser = await User.findById(user._id);
     expect(delUser.username).toBe(user.username);
     expect(delUser.password).toBe(user.password);
@@ -312,11 +317,10 @@ test("DELETE /users/delete/:id Delete a user without being the user", async () =
   }
 });
 
-/*     USER POST CALENDAR     */
-/*============================*/
-test("POST and PUT a schedule in user calendar", async () => {
+test("POST/PUT users/:id/calendar/add/schedule", async () => {
   try {
-    let token = await logUser({ role: "admin" });
+    /* Setup */
+    let token = await logUser("admin");
 
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
@@ -328,6 +332,7 @@ test("POST and PUT a schedule in user calendar", async () => {
       workTime: workTimeA.id,
     });
 
+    /* Case 1: post a schedule */
     let user = await User.findOne();
 
     const rep = await supertest(app)
@@ -336,88 +341,76 @@ test("POST and PUT a schedule in user calendar", async () => {
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeUndefined();
+    expect(rep.body.success).toBeDefined();
     expect(rep.body.success).toBeTruthy();
 
-    // Check if the schedule has been saved correctely in db
+    // Check DB
     let userFound = await User.findById(user.id);
     expect(userFound.id).toBeDefined();
     expect(userFound.calendrier["2022"]["5"]["22"].schedule).toBeDefined();
     expect(userFound.calendrier["2022"]["5"]["22"].schedule).toBe(scheduleA.id);
 
-    //Change the schedule at the same date
+    /* Case 2 : update schedule */
     let scheduleB = new Schedule({
       name: "test scheduleB",
       workTime: workTimeA.id,
     });
+
     const repB = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleB.id, date: "2022-06-22" })
       .expect(200);
 
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeUndefined();
+    expect(repB.body.success).toBeDefined();
     expect(repB.body.success).toBeTruthy();
 
-    // Check if the schedule has been changed correctely in db
+    // Check DB
     let userFoundB = await User.findById(user.id);
     expect(userFoundB.id).toBeDefined();
     expect(userFoundB.calendrier["2022"]["5"]["22"].schedule).toBeDefined();
     expect(userFoundB.calendrier["2022"]["5"]["22"].schedule).toBe(
       scheduleB.id
     );
-  } catch (err) {
-    throw err;
-  }
-});
 
-test("POST a schedule in user calendar with wrong datas", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-
-    let workTimeA = new WorkTime({
-      startDate: new Date(2022, 3, 20, 7, 0),
-      endDate: new Date(2022, 3, 20, 12, 45),
-      breakTime: 0,
-    });
-    let scheduleA = new Schedule({
-      name: "test schedule",
-      workTime: workTimeA.id,
-    });
-
-    let user = await User.findOne();
-
-    // Wrong id
-    const rep = await supertest(app)
+    /* Case 3: update with wrong user id */
+    const repC = await supertest(app)
       .post(`/users/6262ef89b6b72b18c716269d/calendar/add/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(400);
-    expect(rep.body.success).toBeFalsy();
+    expect(repC.body.success).toBeFalsy();
 
-    // wrong date format
-    const repB = await supertest(app)
+    /* Case 4: update with wrong date */
+    const repBD = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22T20:00" })
       .expect(400);
-    expect(repB.body.success).toBeFalsy();
-    expect(repB.body.errors[0].param).toBe("date");
+    expect(repBD.body.success).toBeFalsy();
+    expect(repBD.body.validationErrors.errors[0].param).toBe("date");
 
-    // wrong date schemaId
-    const repC = await supertest(app)
+    /* Case 5: update with wrong schedule id */
+    const repD = await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: "6262ef89b6b72b18c71626", date: "2022-06-22" })
       .expect(400);
-    expect(repC.body.success).toBeFalsy();
-    expect(repC.body.errors[0].param).toBe("scheduleId");
+    expect(repD.body.success).toBeFalsy();
+    expect(repD.body.validationErrors.errors[0].param).toBe("scheduleId");
   } catch (err) {
     throw err;
   }
 });
 
-test("DELETE a schedule in user calendar", async () => {
+test("DELETE users/:id/calendar/delete/schedule", async () => {
   try {
-    let token = await logUser({ role: "admin" });
+    /* Setup */
+    let token = await logUser("admin");
 
     let workTimeA = new WorkTime({
       startDate: new Date(2022, 3, 20, 7, 0),
@@ -432,16 +425,56 @@ test("DELETE a schedule in user calendar", async () => {
     let user = await User.findOne();
 
     // Create a schedule and put it in user calendar
-    const rep = await supertest(app)
+    await supertest(app)
       .post(`/users/${user.id}/calendar/add/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
       .expect(200);
 
-    expect(rep.body.success).toBeTruthy();
+    /* Case 1: wrong ID */
+    let rep = await supertest(app)
+      .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        date: "2022-06-22",
+      })
+      .expect(400);
 
-    // Delete schedule
-    await supertest(app)
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeUndefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeFalsy();
+
+    // Check DB
+    let userTestA = await User.findById(user.id);
+    expect(userTestA).toBeDefined();
+    expect(userTestA.calendrier["2022"]["5"]["22"]["schedule"]).toBe(
+      scheduleA.id
+    );
+
+    /* Case 2: wrong date format */
+    let repB = await supertest(app)
+      .delete(`/users/${user.id}/calendar/delete/schedule`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        date: "2022-06-22T22:00",
+      })
+      .expect(400);
+    expect(repB.body.validationErrors.errors[0].param).toBe("date");
+
+    // Schedule instance is in DB
+    let userTestB = await User.findById(user.id);
+    expect(userTestB).toBeDefined();
+    expect(userTestB.calendrier["2022"]["5"]["22"]["schedule"]).toBe(
+      scheduleA.id
+    );
+
+    // Check that the 2 precedent cases have not deleted the Schedule instance
+    let SCA = await Schedule.findById(scheduleA.id);
+    expect(SCA).toBeDefined();
+
+    /* Case 3: successful deletion */
+    let repC = await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/schedule`)
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -449,7 +482,12 @@ test("DELETE a schedule in user calendar", async () => {
       })
       .expect(200);
 
-    // Test that worktime is not anymore in the user calendar
+    expect(repC.body.message).toBeDefined();
+    expect(repC.body.data).toBeUndefined();
+    expect(repC.body.success).toBeDefined();
+    expect(repC.body.success).toBeTruthy();
+
+    // Check DB
     let userTest = await User.findById(user.id);
     expect(userTest).toBeDefined();
     expect(userTest.calendrier["2022"]["5"]["22"]["schedule"]).toBeNull();
@@ -458,85 +496,14 @@ test("DELETE a schedule in user calendar", async () => {
   }
 });
 
-test("DELETE a schedule in user calendar with wrong datas", async () => {
+test("POST/PUT /:id/calendar/add/worktime", async () => {
   try {
-    let token = await logUser({ role: "admin" });
-
-    let workTimeA = new WorkTime({
-      startDate: new Date(2022, 3, 20, 7, 0),
-      endDate: new Date(2022, 3, 20, 12, 45),
-      breakTime: 0,
-    });
-    let scheduleA = new Schedule({
-      name: "test schedule",
-      workTime: workTimeA.id,
-    });
+    /* Setup */
+    let token = await logUser("admin");
 
     let user = await User.findOne();
 
-    // Create a schedule and put it in user calendar
-    let rep = await supertest(app)
-      .post(`/users/${user.id}/calendar/add/schedule`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({ scheduleId: scheduleA.id, date: "2022-06-22" })
-      .expect(200);
-
-    expect(rep.body.success).toBeTruthy();
-
-    // Try to delete with wrong id
-    rep = await supertest(app)
-      .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/schedule`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22",
-      })
-      .expect(400);
-
-    // Try to delete with wrong date format
-    rep = await supertest(app)
-      .delete(`/users/${user.id}/calendar/delete/schedule`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22T22:00",
-      })
-      .expect(400);
-
-    // Test that schedule is still in the user calendar
-    let userTest = await User.findById(user.id);
-    expect(userTest).toBeDefined();
-    expect(userTest.calendrier["2022"]["5"]["22"]["schedule"]).toBe(
-      scheduleA.id
-    );
-    //Test that schedule instance still exists
-    let SC = await Schedule.findById(scheduleA.id);
-    expect(SC).toBeDefined();
-
-    // Try to delete with wrong date format
-    rep = await supertest(app)
-      .delete(`/users/${user.id}/calendar/delete/schedule`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22T22:00",
-      })
-      .expect(400);
-
-    // Test that schedule is still in the user calendar
-    userTest = await User.findById(user.id);
-    expect(userTest).toBeDefined();
-    expect(userTest.calendrier["2022"]["5"]["22"]["schedule"]).toBe(
-      scheduleA.id
-    );
-  } catch (err) {
-    throw err;
-  }
-});
-
-test("POST and PUT a worktime in user calendar", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-
-    let user = await User.findOne();
-
+    /* Case 1 */
     const rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
       .set("Authorization", `Bearer ${token}`)
@@ -548,14 +515,17 @@ test("POST and PUT a worktime in user calendar", async () => {
       })
       .expect(200);
 
-    // Look into db that datas are correct
-    let userFound = await User.findById(user.id);
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeDefined();
+    expect(rep.body.data.id).toBeDefined();
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
 
-    // Date is okay
+    // Check db
+    let userFound = await User.findById(user.id);
     expect(userFound.calendrier["2022"]["5"]["22"].workTime).toBeDefined();
 
     let workTimeId = userFound.calendrier["2022"]["5"]["22"].workTime;
-
     expect(rep.body.data.id).toBe(workTimeId);
 
     // Worktime exist
@@ -565,7 +535,7 @@ test("POST and PUT a worktime in user calendar", async () => {
     expect(Date(WT.endDate)).toBe(Date("2022-06-22T17:00"));
     expect(Date(WT.breakTime)).toBe(Date(50));
 
-    // Try to update Datas
+    /* Case 2 update datas */
     const repB = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
       .set("Authorization", `Bearer ${token}`)
@@ -577,7 +547,13 @@ test("POST and PUT a worktime in user calendar", async () => {
       })
       .expect(200);
 
-    // Look into db that datas are correct
+    expect(repB.body.message).toBeDefined();
+    expect(repB.body.data).toBeDefined();
+    expect(repB.body.data.id).toBeDefined();
+    expect(repB.body.success).toBeDefined();
+    expect(repB.body.success).toBeTruthy();
+
+    // Check DB
     let userFoundB = await User.findById(user.id);
     let workTimeIdB = userFoundB.calendrier["2022"]["5"]["22"].workTime;
 
@@ -589,19 +565,9 @@ test("POST and PUT a worktime in user calendar", async () => {
     expect(Date(WTb.startDate)).toBe(Date("2022-06-22T08:00"));
     expect(Date(WTb.endDate)).toBe(Date("2022-06-22T16:00"));
     expect(Date(WTb.breakTime)).toBe(Date(30));
-  } catch (err) {
-    throw err;
-  }
-});
 
-test("POST and PUT a worktime in user calendar with wrong datas", async () => {
-  try {
-    let token = await logUser({ role: "admin" });
-
-    let user = await User.findOne();
-
-    // Wrong start and end dates
-    let rep = await supertest(app)
+    /* Case 3: wrong startDate */
+    let repC = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -611,74 +577,69 @@ test("POST and PUT a worktime in user calendar with wrong datas", async () => {
         date: "2022-06-22",
       })
       .expect(400);
+    expect(repC.body.validationErrors.errors[0].param).toBe("startDate");
 
-    // Look into db that datas are correct not saved
-    let userFound = await User.findById(user.id);
+    // Look into db
+    let userFoundC = await User.findById(user.id);
 
-    expect(userFound.calendrier["2022"]).toBeUndefined();
+    expect(userFoundC.calendrier["2022"]).toBeDefined();
+    expect(userFoundC.calendrier["2022"][5]).toBeDefined();
+    expect(userFoundC.calendrier["2022"][5][22]).toBeDefined();
+    expect(userFoundC.calendrier["2022"][5][22]["workTime"]).toBe(workTimeIdB);
 
-    // Wrong breakTime
-    rep = await supertest(app)
+    /* Case 4: endDate is before startDate or not defined */
+    let repD = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
       .set("Authorization", `Bearer ${token}`)
       .send({
-        startDate: "2022-06-22T10:00",
-        endDate: "2022-06-22T17:00",
-        breakTime: -50,
-        date: "2022-06-22",
-      })
-      .expect(400);
-
-    // Look into db that datas are correct not saved
-    userFound = await User.findById(user.id);
-
-    expect(userFound.calendrier["2022"]).toBeUndefined();
-
-    // Wrong date
-    rep = await supertest(app)
-      .post(`/users/${user.id}/calendar/add/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        startDate: "2022-06-22T10:00",
-        endDate: "2022-06-22T17:00",
-        breakTime: 0,
-        date: "2022-06-22T10:00",
-      })
-      .expect(400);
-
-    // Look into db that datas are correct not saved
-    userFound = await User.findById(user.id);
-
-    expect(userFound.calendrier["2022"]).toBeUndefined();
-
-    // startDate <= endDate
-    rep = await supertest(app)
-      .post(`/users/${user.id}/calendar/add/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        startDate: "2022-06-22T18:00",
-        endDate: "2022-06-22T17:00",
+        startDate: "2022-06-22T22:00",
+        endDate: "2022-06-22T20:00",
         breakTime: 50,
         date: "2022-06-22",
       })
       .expect(400);
+    expect(repD.body.validationErrors.errors[0].param).toBe("startDate");
 
-    // Look into db that datas are correct not saved
-    userFound = await User.findById(user.id);
+    // Look into db
+    let userFoundD = await User.findById(user.id);
 
-    expect(userFound.calendrier["2022"]).toBeUndefined();
+    expect(userFoundD.calendrier["2022"]).toBeDefined();
+    expect(userFoundD.calendrier["2022"][5]).toBeDefined();
+    expect(userFoundD.calendrier["2022"][5][22]).toBeDefined();
+    expect(userFoundD.calendrier["2022"][5][22]["workTime"]).toBe(workTimeIdB);
+
+    /* Case 4: wrong breakTime */
+    let repE = await supertest(app)
+      .post(`/users/${user.id}/calendar/add/worktime`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        startDate: "2022-06-22T10:00",
+        endDate: "2022-06-22T20:00",
+        breakTime: -50,
+        date: "2022-06-22",
+      })
+      .expect(400);
+    expect(repE.body.validationErrors.errors[0].param).toBe("breakTime");
+
+    // Look into db
+    let userFoundE = await User.findById(user.id);
+
+    expect(userFoundE.calendrier["2022"]).toBeDefined();
+    expect(userFoundE.calendrier["2022"][5]).toBeDefined();
+    expect(userFoundE.calendrier["2022"][5][22]).toBeDefined();
+    expect(userFoundE.calendrier["2022"][5][22]["workTime"]).toBe(workTimeIdB);
   } catch (err) {
     throw err;
   }
 });
 
-test("DELETE a worktime in user calendar", async () => {
+test("DELETE /:id/calendar/delete/worktime", async () => {
   try {
-    let token = await logUser({ role: "admin" });
+    /* Setup */
+    let token = await logUser("admin");
 
     let user = await User.findOne();
 
-    // Create a worktime and put it in user calendar
     let rep = await supertest(app)
       .post(`/users/${user.id}/calendar/add/worktime`)
       .set("Authorization", `Bearer ${token}`)
@@ -690,8 +651,33 @@ test("DELETE a worktime in user calendar", async () => {
       })
       .expect(200);
 
-    // Delete worktime
+    /* Case 1: wrong date */
     let repB = await supertest(app)
+      .delete(`/users/${user.id}/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        date: "2022-10-22T",
+      })
+      .expect(400);
+
+    expect(repB.body.validationErrors.errors[0].param).toBe("date");
+
+    /* Case 2: wrong user id */
+    let repC = await supertest(app)
+      .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/worktime`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        date: "2022-06-22",
+      })
+      .expect(400);
+
+    expect(repC.body.message).toBeDefined();
+    expect(repC.body.data).toBeUndefined();
+    expect(repC.body.success).toBeDefined();
+    expect(repC.body.success).toBeFalsy();
+
+    /* Case 3: successful deletion */
+    await supertest(app)
       .delete(`/users/${user.id}/calendar/delete/worktime`)
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -699,11 +685,11 @@ test("DELETE a worktime in user calendar", async () => {
       })
       .expect(200);
 
-    // Test worktime is no in db anymore
+    // Check DB
     let WT = await WorkTime.findById(rep.body.data.id);
     expect(WT).toBeNull();
 
-    // Test that worktime is not anymore in the user calendar
+    // Check user Calendar in DB
     let userTest = await User.findById(user.id);
     expect(userTest).toBeDefined();
     expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBeNull();
@@ -712,68 +698,24 @@ test("DELETE a worktime in user calendar", async () => {
   }
 });
 
-test("DELETE a worktime in user calendar with wrong datas", async () => {
+test("GET users/get/worktime/:worktimeId", async () => {
   try {
-    let token = await logUser({ role: "admin" });
-
-    let user = await User.findOne();
-
-    // Create a worktime and put it in user calendar
+    /* Setup */
+    let workTimeDatas = {
+      startDate: new Date(2022, 3, 20, 7, 0),
+      endDate: new Date(2022, 3, 20, 12, 45),
+      breakTime: 0,
+    };
+    let worktime = await WorkTime.create(workTimeDatas);
     let rep = await supertest(app)
-      .post(`/users/${user.id}/calendar/add/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        startDate: "2022-06-22T08:00",
-        endDate: "2022-06-22T17:00",
-        breakTime: 60,
-        date: "2022-06-22",
-      })
+      .get(`/users/get/worktime/${worktime.id}`)
       .expect(200);
 
-    let WTId = rep.body.data.id;
-
-    // Try to delete with wrong id
-    rep = await supertest(app)
-      .delete(`/users/6262ef89b6b72b18c716269d/calendar/delete/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22",
-      })
-      .expect(400);
-
-    // Try to delete with wrong date format
-    rep = await supertest(app)
-      .delete(`/users/${user.id}/calendar/delete/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22T22:00",
-      })
-      .expect(400);
-
-    // Test that worktime is still in the user calendar
-    let userTest = await User.findById(user.id);
-    expect(userTest).toBeDefined();
-    expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBe(WTId);
-    //Test that WT instance still exists
-    let WT = await WorkTime.findById(WTId);
-    expect(WT).toBeDefined();
-
-    // Try to delete with wrong date format
-    rep = await supertest(app)
-      .delete(`/users/${user.id}/calendar/delete/worktime`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({
-        date: "2022-06-22T22:00",
-      })
-      .expect(400);
-
-    // Test that worktime is still in the user calendar
-    userTest = await User.findById(user.id);
-    expect(userTest).toBeDefined();
-    expect(userTest.calendrier["2022"]["5"]["22"]["workTime"]).toBe(WTId);
-    //Test that WT instance still exists
-    WT = await WorkTime.findById(WTId);
-    expect(WT).toBeDefined();
+    expect(rep.body.message).toBeDefined();
+    expect(rep.body.data).toBeDefined();
+    expect(rep.body.data._id).toBe(worktime.id);
+    expect(rep.body.success).toBeDefined();
+    expect(rep.body.success).toBeTruthy();
   } catch (err) {
     throw err;
   }
