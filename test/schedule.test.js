@@ -331,7 +331,7 @@ test("PUT schedule/put/:id", async () => {
   }
 });
 
-test.only("DELETE schedule/delete/:id", async () => {
+test("DELETE schedule/delete/:id", async () => {
   try {
     /* Test setup */
 
