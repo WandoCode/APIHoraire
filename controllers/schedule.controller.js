@@ -15,15 +15,11 @@ exports.get_all_schedule = async (req, res, next) => {
       });
     }
 
-
-
     res.status(200).send({
       message: "Schedules found",
       success: true,
-      data: scheduleFound
+      data: scheduleFound,
     });
-
-
   } catch (err) {
     next(err);
   }
@@ -36,7 +32,7 @@ exports.get_schedule = async (req, res, next) => {
 
     let workTime = await WorkTime.findById(scheduleFound.workTime);
 
-    if (workTime.length === 0) {
+    if (!workTime) {
       res.status(400).send({
         message: "No workTime found in db",
         success: false,
@@ -48,8 +44,8 @@ exports.get_schedule = async (req, res, next) => {
       message: "Schedules found",
       success: true,
       data: {
-        _id:scheduleFound._id,
-        workTime:scheduleFound.workTime,
+        _id: scheduleFound._id,
+        workTime: scheduleFound.workTime,
         name: scheduleFound.name,
         startDate: workTime.startDate,
         endDate: workTime.endDate,
@@ -149,7 +145,6 @@ exports.delete_schedule = async (req, res, next) => {
       message: "Schedules deleted",
       success: true,
     });
-
   } catch (err) {
     next(err);
   }

@@ -39,7 +39,7 @@ module.exports = {
   ],
   Schedule: [
     {
-      name: "shedule A",
+      name: "schedule A",
       workTime: workTimeA.id,
     },
     {
