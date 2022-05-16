@@ -37,7 +37,6 @@ exports.login = [
   body("username")
     .trim()
     .isAlphanumeric()
-    .withMessage("Use alphanumeric characters")
     .isLength({
       min: datasUser.username.minlength,
       max: datasUser.username.maxlength,
@@ -46,8 +45,7 @@ exports.login = [
       `Username have to be ${datasUser.username.minlength} - ${datasUser.username.maxlength} length`
     )
     .not()
-    .isEmpty()
-    .withMessage("Username field is empty"),
+    .isEmpty(),
   body("password")
     .trim()
     .isLength({
