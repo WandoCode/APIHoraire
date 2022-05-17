@@ -1,7 +1,7 @@
 const supertest = require("supertest");
 const WorkTime = require("../models/workTime.model");
 const workTimeSeed = require("./seed/workTime.seed");
-const app = require("../server");
+const app = require("../App");
 
 const { setupDB } = require("./test-setup");
 
