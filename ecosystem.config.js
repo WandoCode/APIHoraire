@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      script: "bin/www",
+      script: "App.js",
       watch: ".",
     },
   ],
