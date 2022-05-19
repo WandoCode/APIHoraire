@@ -15,8 +15,7 @@ module.exports = {
       repo: "git@github.com:Wandole/APIHoraire.git",
       path: "/root/horaireAPI",
       "pre-deploy-local": "",
-      "post-deploy":
-        "npm install& pm2 reload ecosystem.config.js --env production",
+      "post-deploy": "",
       "pre-setup": "",
     },
   },
