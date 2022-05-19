@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "./bin/www",
-    "serverstart": "set DEBUG=base-api:*& npm start dev",
+    "start": "node ./bin/www",
+    "serverstart": "set DEBUG=base-api:*& npm start",
     "test": "set NODE_ENV=test& jest"
   },
   "dependencies": {
@@ -36,5 +36,8 @@
     "coveragePathIgnorePatterns": [
       "/node_modules/"
     ]
+  },
+  "engines": {
+    "node": "16.x"
   }
 }
